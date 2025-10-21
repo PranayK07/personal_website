@@ -1,22 +1,58 @@
 'use client';
 
+import { useScrollAnimation } from '@/hooks/useScrollAnimation';
+
 export default function Hero() {
+  const [ref, isVisible] = useScrollAnimation(0.3);
+
   return (
-    <section className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto text-center">
-        <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold mb-6 text-heading tracking-tight leading-tight">
-          Pranay Kakkar
-        </h1>
-        <h2 className="text-xl sm:text-2xl md:text-3xl font-medium mb-4 text-accent-cyan">
-          Computer Science Student
-        </h2>
-        <p className="text-base sm:text-lg text-text-muted mb-8">
-          South Windsor, CT
-        </p>
-        <p className="text-base sm:text-lg text-foreground/80 max-w-2xl mx-auto leading-relaxed">
-          Passionate about creating innovative solutions and building exceptional digital experiences.
-          Currently exploring cutting-edge technologies and contributing to open-source projects.
-        </p>
+    <section id="home" className="min-h-screen flex items-center justify-center">
+      <div className="container text-center">
+        <div 
+          ref={ref}
+          className={`scroll-fade-in ${isVisible ? 'visible' : ''}`}
+        >
+          <h1 className="heading-1">
+            Pranay Kakkar
+          </h1>
+          <p className="text-large mb-4">
+            Computer Science Student
+          </p>
+          <p className="text-muted mb-12">
+            South Windsor, CT
+          </p>
+          
+          <p className="text-lg text-muted max-w-2xl mx-auto mb-12 leading-relaxed">
+            Passionate about building innovative solutions and exploring the intersection 
+            of technology and creativity. Currently pursuing Computer Science with a focus 
+            on full-stack development and software engineering.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button
+              onClick={() => {
+                const element = document.getElementById('projects');
+                if (element) {
+                  element.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
+              className="btn"
+            >
+              View My Work
+            </button>
+            <button
+              onClick={() => {
+                const element = document.getElementById('contact');
+                if (element) {
+                  element.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
+              className="btn bg-transparent border border-accent text-accent hover:bg-accent hover:text-white"
+            >
+              Get In Touch
+            </button>
+          </div>
+        </div>
       </div>
     </section>
   );

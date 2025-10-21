@@ -1,14 +1,29 @@
 'use client';
 
-import Link from 'next/link';
 import { useState, useEffect } from 'react';
 
 export default function Navigation() {
-  const [scrolled, setScrolled] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [activeSection, setActiveSection] = useState('home');
 
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
+      setIsScrolled(window.scrollY > 50);
+      
+      // Update active section based on scroll position
+      const sections = ['home', 'about', 'projects', 'contact'];
+      const scrollPosition = window.scrollY + 100;
+      
+      for (const section of sections) {
+        const element = document.getElementById(section);
+        if (element) {
+          const { offsetTop, offsetHeight } = element;
+          if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
+            setActiveSection(section);
+            break;
+          }
+        }
+      }
     };
 
     window.addEventListener('scroll', handleScroll);
@@ -22,39 +37,33 @@ export default function Navigation() {
     }
   };
 
+  const navItems = [
+    { id: 'home', label: 'Home' },
+    { id: 'about', label: 'About' },
+    { id: 'projects', label: 'Projects' },
+    { id: 'contact', label: 'Contact' }
+  ];
+
   return (
-    <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled ? 'bg-background/90 backdrop-blur-md border-b border-card-border shadow-lg' : 'bg-transparent'
-      }`}
-    >
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <Link href="/" className="text-xl font-bold text-accent-cyan hover:text-accent-cyan-light transition-colors">
-            PK
-          </Link>
-          
-          <div className="flex items-center gap-4 sm:gap-6">
-            <button
-              onClick={() => scrollToSection('projects')}
-              className="text-foreground/80 hover:text-accent-cyan transition-colors text-sm font-medium"
-            >
-              Projects
-            </button>
-            <button
-              onClick={() => scrollToSection('contact')}
-              className="text-foreground/80 hover:text-accent-cyan transition-colors text-sm font-medium"
-            >
-              Contact
-            </button>
-            <a
-              href="/Resume_Template_PDF.pdf"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-2 bg-accent-cyan text-background rounded-lg hover:bg-accent-cyan-light transition-all hover:shadow-lg hover:shadow-accent-cyan/20 text-sm font-medium"
-            >
-              Resume
-            </a>
+    <nav className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50">
+      <div className="flex items-center justify-center">
+        <div className="bg-background/20 backdrop-blur-md border border-accent/20 rounded-full px-20 py-8 shadow-lg">
+          <div className="flex items-center">
+            {navItems.map((item, index) => (
+              <button
+                key={item.id}
+                onClick={() => scrollToSection(item.id)}
+                className={`px-12 py-6 rounded-full transition-all duration-300 text-base font-medium ${
+                  index < navItems.length - 1 ? 'mr-16' : ''
+                } ${
+                  activeSection === item.id 
+                    ? 'bg-accent text-background shadow-lg' 
+                    : 'text-foreground hover:text-accent hover:bg-accent/10'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
           </div>
         </div>
       </div>
