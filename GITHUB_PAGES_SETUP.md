@@ -8,6 +8,7 @@ This repository is now configured to automatically deploy to GitHub Pages! 🎉
 2. ✅ **Configured Static Export**: Updated `next.config.ts` to enable static HTML export
 3. ✅ **Created GitHub Actions Workflow**: Automated deployment on every push to main branch
 4. ✅ **Added .nojekyll File**: Prevents GitHub Pages from processing files with Jekyll
+5. ✅ **Fixed CSS Loading Issue**: Set correct `basePath: '/personal_website'` so CSS and JS files load properly
 
 ## How to Enable GitHub Pages (One-Time Setup)
 
@@ -58,6 +59,15 @@ To check if your deployment is successful:
 5. Red X ✗ = deployment failed (check logs for errors)
 
 ## Troubleshooting
+
+### If CSS/Styling is not loading:
+
+**This has been fixed!** The `basePath` is now correctly set to `/personal_website` in `next.config.ts`.
+
+If you rename the repository or fork it, you MUST update the `basePath` in `next.config.ts`:
+```typescript
+basePath: '/your-new-repository-name',
+```
 
 ### If the workflow doesn't run automatically:
 
