@@ -50,7 +50,7 @@ export default function Navigation() {
   return (
     <nav className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50">
       <div className="flex items-center justify-center">
-        <div className="bg-background/20 backdrop-blur-md border border-accent/20 rounded-full px-16 py-6 shadow-lg">
+        <div className="bg-background/20 backdrop-blur-md border border-accent/20 rounded-full px-16 py-10 shadow-lg">
           <div className="flex items-center gap-8">
             {navItems.map((item, index) => (
               <button
