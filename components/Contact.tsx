@@ -1,7 +1,7 @@
 'use client';
 
 import { useScrollAnimation } from '@/hooks/useScrollAnimation';
-import { useState } from 'react';
+import { useState, RefObject } from 'react';
 
 export default function Contact() {
   const [ref, isVisible] = useScrollAnimation(0.2);
@@ -11,7 +11,7 @@ export default function Contact() {
     <section id="contact" className="section py-20">
       <div className="container text-center">
         <div
-          ref={ref}
+          ref={ref as RefObject<HTMLDivElement>}
           className={`scroll-fade-in ${isVisible ? 'visible' : ''}`}
         >
           <h2 className="heading-2 text-center mb-12 relative inline-block">
