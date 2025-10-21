@@ -1,46 +1,129 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useScrollAnimation } from '@/hooks/useScrollAnimation';
+import Image from 'next/image';
 
 interface Tech {
   name: string;
-  icon: string;
+  // Use either 'icon' for emoji or 'logo' for image URL
+  icon?: string;
+  logo?: string;
   color: string;
 }
 
+/**
+ * Tech Stack Configuration
+ *
+ * How to add a new technology:
+ * 1. Add a new object to the array below
+ * 2. Set 'name' to the technology name
+ * 3. Choose ONE of the following:
+ *    - Use 'icon' for emoji (e.g., icon: '⚛️')
+ *    - Use 'logo' for image URL (e.g., logo: '/logos/react.svg' or 'https://...')
+ * 4. Set 'color' to the brand color (used for background tint)
+ *
+ * Images will automatically be sized and formatted to fit the card.
+ */
 const techStack: Tech[] = [
-  { name: 'React', icon: '⚛️', color: '#61DAFB' },
-  { name: 'Next.js', icon: '▲', color: '#000000' },
-  { name: 'TypeScript', icon: '🔷', color: '#3178C6' },
-  { name: 'JavaScript', icon: '🟨', color: '#F7DF1E' },
-  { name: 'Node.js', icon: '🟢', color: '#339933' },
-  { name: 'Python', icon: '🐍', color: '#3776AB' },
-  { name: 'Java', icon: '☕', color: '#ED8B00' },
-  { name: 'Git', icon: '📦', color: '#F05032' },
-  { name: 'Docker', icon: '🐳', color: '#2496ED' },
-  { name: 'AWS', icon: '☁️', color: '#FF9900' },
-  { name: 'MongoDB', icon: '🍃', color: '#47A248' },
-  { name: 'PostgreSQL', icon: '🐘', color: '#336791' },
+  {
+    name: 'React',
+    logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg',
+    color: '#61DAFB'
+  },
+  {
+    name: 'Next.js',
+    logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nextjs/nextjs-original.svg',
+    color: '#000000'
+  },
+  {
+    name: 'TypeScript',
+    logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg',
+    color: '#3178C6'
+  },
+  {
+    name: 'JavaScript',
+    logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg',
+    color: '#F7DF1E'
+  },
+  {
+    name: 'Node.js',
+    logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nodejs/nodejs-original.svg',
+    color: '#339933'
+  },
+  {
+    name: 'Python',
+    logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg',
+    color: '#3776AB'
+  },
+  {
+    name: 'Java',
+    logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg',
+    color: '#ED8B00'
+  },
+  {
+    name: 'Git',
+    logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/git/git-original.svg',
+    color: '#F05032'
+  },
+  {
+    name: 'Docker',
+    logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg',
+    color: '#2496ED'
+  },
+  {
+    name: 'AWS',
+    icon: '☁️',
+    color: '#FF9900'
+  },
+  {
+    name: 'MongoDB',
+    logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/mongodb/mongodb-original.svg',
+    color: '#47A248'
+  },
+  {
+    name: 'PostgreSQL',
+    logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg',
+    color: '#336791'
+  },
 ];
+
+function TechCard({ tech, onHover }: { tech: Tech; onHover: (hovering: boolean) => void }) {
+  return (
+    <div
+      onMouseEnter={() => onHover(true)}
+      onMouseLeave={() => onHover(false)}
+      className="group flex-shrink-0 flex flex-col items-center justify-center p-4 card min-w-[120px] hover:scale-105 hover:shadow-lg transition-all duration-300 cursor-pointer"
+    >
+      <div
+        className="w-12 h-12 mb-3 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform"
+        style={{ backgroundColor: tech.color + '15' }}
+      >
+        {tech.logo ? (
+          <div className="relative w-8 h-8">
+            <Image
+              src={tech.logo}
+              alt={`${tech.name} logo`}
+              fill
+              className="object-contain"
+              unoptimized
+            />
+          </div>
+        ) : (
+          <span className="text-2xl">{tech.icon}</span>
+        )}
+      </div>
+      <span className="text-sm font-medium text-foreground text-center">
+        {tech.name}
+      </span>
+    </div>
+  );
+}
 
 export default function TechStack() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [ref, isVisible] = useScrollAnimation(0.2);
-
-  const scrollLeft = () => {
-    const scrollContainer = scrollContainerRef.current;
-    if (scrollContainer) {
-      scrollContainer.scrollLeft -= 200;
-    }
-  };
-
-  const scrollRight = () => {
-    const scrollContainer = scrollContainerRef.current;
-    if (scrollContainer) {
-      scrollContainer.scrollLeft += 200;
-    }
-  };
+  const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
     const scrollContainer = scrollContainerRef.current;
@@ -48,143 +131,78 @@ export default function TechStack() {
 
     let animationId: number;
     let scrollPosition = 0;
-    const scrollSpeed = 0.8;
-    let isPaused = false;
-    let isUserScrolling = false;
-    let scrollTimeout: NodeJS.Timeout;
+    const scrollSpeed = 0.5; // Slower, smoother scrolling
 
     const animate = () => {
-      if (!isPaused && !isUserScrolling) {
+      if (!isPaused) {
         scrollPosition += scrollSpeed;
-        
-        // Get the total scrollable width
-        const maxScroll = scrollContainer.scrollWidth - scrollContainer.clientWidth;
-        
-        // Reset position when we've scrolled through all items
-        if (scrollPosition >= maxScroll) {
+
+        // Calculate the width of one set of items
+        const itemWidth = scrollContainer.scrollWidth / 2;
+
+        // Reset position for seamless loop
+        if (scrollPosition >= itemWidth) {
           scrollPosition = 0;
         }
-        
+
         scrollContainer.scrollLeft = scrollPosition;
       }
       animationId = requestAnimationFrame(animate);
     };
 
-    // Start animation immediately with a small delay
+    // Start animation after a small delay
     const timeoutId = setTimeout(() => {
       animationId = requestAnimationFrame(animate);
-    }, 500);
-
-    // Pause animation on hover
-    const handleMouseEnter = () => {
-      isPaused = true;
-    };
-
-    const handleMouseLeave = () => {
-      isPaused = false;
-    };
-
-    // Handle manual scrolling
-    const handleWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      isUserScrolling = true;
-      scrollPosition += e.deltaY * 0.5;
-      scrollContainer.scrollLeft = scrollPosition;
-      
-      // Resume auto-scroll after user stops scrolling
-      clearTimeout(scrollTimeout);
-      scrollTimeout = setTimeout(() => {
-        isUserScrolling = false;
-      }, 2000);
-    };
-
-    const handleTouchStart = () => {
-      isUserScrolling = true;
-    };
-
-    const handleTouchEnd = () => {
-      setTimeout(() => {
-        isUserScrolling = false;
-      }, 2000);
-    };
-
-    scrollContainer.addEventListener('mouseenter', handleMouseEnter);
-    scrollContainer.addEventListener('mouseleave', handleMouseLeave);
-    scrollContainer.addEventListener('wheel', handleWheel, { passive: false });
-    scrollContainer.addEventListener('touchstart', handleTouchStart);
-    scrollContainer.addEventListener('touchend', handleTouchEnd);
+    }, 1000);
 
     return () => {
       clearTimeout(timeoutId);
-      clearTimeout(scrollTimeout);
       cancelAnimationFrame(animationId);
-      scrollContainer.removeEventListener('mouseenter', handleMouseEnter);
-      scrollContainer.removeEventListener('mouseleave', handleMouseLeave);
-      scrollContainer.removeEventListener('wheel', handleWheel);
-      scrollContainer.removeEventListener('touchstart', handleTouchStart);
-      scrollContainer.removeEventListener('touchend', handleTouchEnd);
     };
-  }, []);
+  }, [isPaused]);
+
+  const handleCardHover = (hovering: boolean) => {
+    setIsPaused(hovering);
+  };
 
   return (
-    <section id="about" className="section">
+    <section id="about" className="section py-20">
       <div className="container">
-        <div 
+        <div
           ref={ref}
           className={`scroll-fade-in ${isVisible ? 'visible' : ''}`}
         >
-          <h2 className="heading-2 text-center mb-12">
+          <h2 className="heading-2 text-center mb-4">
             Tech Stack
           </h2>
-          <div className="relative max-w-2xl mx-auto">
-            {/* Left Arrow Button */}
-            <button
-              onClick={scrollLeft}
-              className="absolute left-2 top-1/2 transform -translate-y-1/2 z-20 bg-background/80 backdrop-blur-sm border border-accent/20 rounded-full p-3 hover:bg-accent/10 transition-all duration-300"
-            >
-              <svg className="w-5 h-5 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
+          <p className="text-center text-foreground/60 mb-12 max-w-2xl mx-auto">
+            Technologies and tools I work with
+          </p>
 
-            {/* Right Arrow Button */}
-            <button
-              onClick={scrollRight}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 z-20 bg-background/80 backdrop-blur-sm border border-accent/20 rounded-full p-3 hover:bg-accent/10 transition-all duration-300"
-            >
-              <svg className="w-5 h-5 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-
+          <div className="relative max-w-5xl mx-auto">
             {/* Gradient overlays for smooth fade effect */}
-            <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
-            <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
-            
+            <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
+            <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
+
             <div
               ref={scrollContainerRef}
-              className="flex gap-3 overflow-x-hidden scrollbar-hide"
-              style={{ scrollBehavior: 'smooth' }}
+              className="flex gap-4 overflow-x-hidden scrollbar-hide py-4"
             >
-              {/* Duplicate the tech stack for seamless infinite scroll */}
-              {[...techStack, ...techStack].map((tech, index) => (
-                <div
+              {/* Triple the tech stack for seamless infinite scroll */}
+              {[...techStack, ...techStack, ...techStack].map((tech, index) => (
+                <TechCard
                   key={`${tech.name}-${index}`}
-                  className="group flex-shrink-0 flex flex-col items-center justify-center p-3 card min-w-[100px] hover:scale-105 transition-all duration-300"
-                >
-                  <div 
-                    className="w-10 h-10 mb-2 rounded-lg flex items-center justify-center text-xl group-hover:scale-110 transition-transform"
-                    style={{ backgroundColor: tech.color + '20' }}
-                  >
-                    {tech.icon}
-                  </div>
-                  <span className="text-xs font-medium text-foreground text-center">
-                    {tech.name}
-                  </span>
-                </div>
+                  tech={tech}
+                  onHover={handleCardHover}
+                />
               ))}
             </div>
           </div>
+
+          {/* Subtle hint that hovering pauses */}
+          <p className="text-center text-foreground/40 text-xs mt-6">
+            Hover over a card to pause
+          </p>
         </div>
       </div>
     </section>

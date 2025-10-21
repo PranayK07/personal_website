@@ -9,23 +9,31 @@ export default function Navigation() {
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50);
-      
+
       // Update active section based on scroll position
       const sections = ['home', 'about', 'projects', 'contact'];
-      const scrollPosition = window.scrollY + window.innerHeight / 2;
-      
-      // Check sections in reverse order to handle the bottom of the page correctly
-      for (let i = sections.length - 1; i >= 0; i--) {
-        const section = sections[i];
+      const scrollPosition = window.scrollY + 200; // Distance from top of viewport
+
+      // Find which section is currently in view
+      let currentSection = 'home';
+
+      for (const section of sections) {
         const element = document.getElementById(section);
         if (element) {
-          const { offsetTop } = element;
-          if (scrollPosition >= offsetTop) {
-            setActiveSection(section);
+          const { offsetTop, offsetHeight } = element;
+          // Check if we've scrolled past the start of this section
+          if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
+            currentSection = section;
             break;
+          }
+          // If we're past this section, it might be the active one
+          if (scrollPosition >= offsetTop) {
+            currentSection = section;
           }
         }
       }
+
+      setActiveSection(currentSection);
     };
 
     window.addEventListener('scroll', handleScroll);
@@ -48,24 +56,63 @@ export default function Navigation() {
   ];
 
   return (
-    <nav className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50">
-      <div className="flex items-center justify-center">
-        <div className="bg-background/20 backdrop-blur-md border border-accent/20 rounded-full px-16 py-10 shadow-lg">
-          <div className="flex items-center gap-8">
-            {navItems.map((item, index) => (
-              <button
-                key={item.id}
-                onClick={() => scrollToSection(item.id)}
-                className={`px-16 py-8 rounded-full transition-all duration-300 text-xs font-medium ${
-                  activeSection === item.id 
-                    ? 'bg-accent text-background shadow-lg' 
-                    : 'text-foreground hover:text-accent hover:bg-accent/10'
-                }`}
-              >
+    <nav className="fixed top-8 left-1/2 transform -translate-x-1/2 z-50">
+      <div
+        className={`
+          relative backdrop-blur-2xl bg-background/30
+          border-2 border-white/15 rounded-3xl
+          shadow-[0_8px_32px_0_rgba(20,184,166,0.15)]
+          transition-all duration-500 ease-out
+          p-3
+          ${isScrolled
+            ? 'shadow-[0_8px_32px_0_rgba(20,184,166,0.3)] bg-background/40 backdrop-blur-3xl'
+            : ''
+          }
+          before:absolute before:inset-0 before:rounded-3xl
+          before:bg-gradient-to-br before:from-accent/10 before:via-accent/5 before:to-transparent
+          before:opacity-60 before:pointer-events-none
+          after:absolute after:inset-0 after:rounded-3xl
+          after:bg-gradient-to-t after:from-white/5 after:to-transparent
+          after:pointer-events-none
+        `}
+      >
+        <div className="relative flex items-center justify-center gap-4">
+          {navItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => scrollToSection(item.id)}
+              className={`
+                relative rounded-2xl
+                px-10 py-5
+                text-base font-bold tracking-wide
+                transition-all duration-300 ease-out
+                group overflow-hidden
+                flex items-center justify-center
+                min-w-[140px]
+                ${activeSection === item.id
+                  ? 'text-background'
+                  : 'text-foreground/80 hover:text-foreground'
+                }
+              `}
+            >
+              {activeSection === item.id && (
+                <span
+                  className="absolute inset-0 bg-gradient-to-r from-accent to-accent-hover rounded-2xl
+                             shadow-[0_0_20px_rgba(20,184,166,0.4)]
+                             animate-in fade-in duration-300"
+                />
+              )}
+              {activeSection !== item.id && (
+                <span
+                  className="absolute inset-0 bg-accent/10 rounded-2xl opacity-0
+                             group-hover:opacity-100 transition-opacity duration-300"
+                />
+              )}
+              <span className="relative z-10 text-center whitespace-nowrap">
                 {item.label}
-              </button>
-            ))}
-          </div>
+              </span>
+            </button>
+          ))}
         </div>
       </div>
     </nav>

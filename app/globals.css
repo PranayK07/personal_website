@@ -13,16 +13,7 @@
   --section-bg: #0f0f0f;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-text-muted: var(--text-muted);
-  --color-accent: var(--accent);
-  --color-accent-hover: var(--accent-hover);
-  --color-card-bg: var(--card-bg);
-  --color-card-border: var(--card-border);
-  --color-section-bg: var(--section-bg);
-}
+
 
 * {
   margin: 0;
@@ -272,12 +263,12 @@ p, span, div {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--accent-cyan);
+  background: var(--accent);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-cyan-light);
+  background: var(--accent-hover);
 }
 
 /* Hide scrollbar utility */
@@ -285,6 +276,62 @@ p, span, div {
   -ms-overflow-style: none;  /* Internet Explorer 10+ */
   scrollbar-width: none;  /* Firefox */
 }
-.scrollbar-hide::-webkit-scrollbar { 
+.scrollbar-hide::-webkit-scrollbar {
   display: none;  /* Safari and Chrome */
+}
+
+/* Animated gradient for text */
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient {
+  animation: gradient 8s ease infinite;
+}
+
+/* Floating animation for particles */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) translateX(0);
+  }
+  25% {
+    transform: translateY(-20px) translateX(10px);
+  }
+  50% {
+    transform: translateY(-40px) translateX(-10px);
+  }
+  75% {
+    transform: translateY(-20px) translateX(10px);
+  }
+}
+
+.animate-float {
+  animation: float 20s ease-in-out infinite;
+}
+
+/* Perspective utility */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+/* Smooth transitions */
+* {
+  transition-property: color, background-color, border-color;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
+/* Override for specific elements that need custom transitions */
+.card,
+button,
+a {
+  transition: all 0.3s ease;
 }
