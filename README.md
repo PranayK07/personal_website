@@ -186,15 +186,32 @@ personal_website/
 
 ## 🚀 Deployment
 
-### Vercel (Recommended)
+### GitHub Pages (Configured & Ready!) ⭐
+This repository is **already configured** for GitHub Pages deployment!
+
+**Quick Start:**
+1. Go to repository Settings → Pages
+2. Under "Source", select "GitHub Actions"
+3. Merge this branch to `main`
+4. Your site will be live at `https://pranayk07.github.io/personal_website/`
+
+See [GITHUB_PAGES_SETUP.md](GITHUB_PAGES_SETUP.md) for detailed setup instructions.
+
+**Features:**
+- ✅ Automatic deployment on every push to main
+- ✅ Static export pre-configured
+- ✅ GitHub Actions workflow ready
+- ✅ Free hosting with HTTPS
+
+### Vercel (Alternative)
 1. Push your code to GitHub
 2. Import project to [Vercel](https://vercel.com)
 3. Deploy automatically
 
 ### Other Platforms
-- **Netlify**: `npm run build` then deploy `.next` folder
+- **Netlify**: Static export ready, deploy the `out` folder
 - **AWS Amplify**: Connect GitHub repo
-- **Custom Server**: `npm run build && npm start`
+- See [DEPLOYMENT.md](DEPLOYMENT.md) for more options
 
 ## 💡 Tips for Customization
 

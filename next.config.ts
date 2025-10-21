@@ -1,14 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: 'export',
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'cdn.jsdelivr.net',
-      },
-    ],
+    unoptimized: true,
   },
+  basePath: '',
+  trailingSlash: true,
 };
 
 export default nextConfig;
