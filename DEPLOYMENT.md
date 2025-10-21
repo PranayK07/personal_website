@@ -55,34 +55,39 @@ Great alternative with similar features to Vercel.
 
 Free hosting directly from your GitHub repository.
 
-**Steps:**
+**Important:** This repository is already configured for GitHub Pages! ✅
 
-1. Update `next.config.ts`:
+**Current Configuration (`next.config.ts`):**
 ```typescript
 const nextConfig = {
   output: 'export',
   images: {
     unoptimized: true,
   },
+  basePath: '/personal_website',  // Must match your repository name!
+  trailingSlash: true,
 };
 ```
 
-2. Add deployment script to `package.json`:
-```json
-"scripts": {
-  "deploy": "next build && touch out/.nojekyll && git add -f out && git commit -m 'Deploy' && git subtree push --prefix out origin gh-pages"
-}
-```
+**Key Configuration:**
+- `basePath: '/personal_website'` - **Critical!** This must match your repository name. Without this, CSS and JavaScript files won't load because they'll be referenced from the wrong path.
+  - ✅ Correct: `https://pranayk07.github.io/personal_website/_next/...`
+  - ❌ Wrong: `https://pranayk07.github.io/_next/...`
 
-3. Run deployment:
-```bash
-npm run deploy
-```
+**Deployment via GitHub Actions (Current Setup):**
 
-4. Enable GitHub Pages in repository settings:
-   - Go to Settings → Pages
-   - Source: gh-pages branch
-   - Save
+The repository uses GitHub Actions for automatic deployment:
+
+1. The workflow file (`.github/workflows/deploy.yml`) is already configured
+2. Push changes to the `main` branch
+3. GitHub Actions automatically builds and deploys your site
+4. Your site will be live at `https://pranayk07.github.io/personal_website/`
+
+**Enabling GitHub Pages:**
+1. Go to Settings → Pages
+2. Under "Build and deployment":
+   - **Source**: Select "GitHub Actions"
+3. Push to main branch to trigger deployment
 
 **Note:** Some features may not work with static export (like API routes).
 
