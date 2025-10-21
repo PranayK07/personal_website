@@ -12,9 +12,7 @@ interface Experience {
   technologies: string[];
 }
 
-// ============================================
-// EDIT YOUR WORK EXPERIENCE HERE - Easy to customize!
-// ============================================
+
 const experiences: Experience[] = [
 
   {
@@ -23,7 +21,7 @@ const experiences: Experience[] = [
     location: 'Storrs, CT',
     date: 'May 2024 – Aug 2024',
     description:
-      'Conducted research on data-driven biometric cryptography solutions, co-developing Fingerprint Privacy models with 92% accuracy using ResNet, DenseNet, and SVMs. Engineered CUDA-accelerated feature extraction algorithms reducing runtime by 40% while processing 400K+ structured and unstructured samples. Documented ML architectures achieving 90–94% accuracy, enhancing data communication and automation.',
+      'Conducted research on data-driven biometric cryptography solutions, co-developing Face Recognition Privacy models with 92% accuracy using ResNet, DenseNet, and SVMs. Engineered CUDA-accelerated feature extraction algorithms reducing runtime by 40% while processing 400K+ structured and unstructured samples. Documented ML architectures achieving 90–94% accuracy, enhancing data communication and automation.',
     technologies: ['PyTorch', 'scikit-learn', 'CUDA', 'Python', 'Machine Learning', 'OpenCV', 'ETL', 'Git'],
   },
 
@@ -49,9 +47,7 @@ const experiences: Experience[] = [
 
   // Add more experiences by copying the format above
 ];
-// ============================================
-// END OF WORK EXPERIENCE - Don't edit below this unless you know what you're doing
-// ============================================
+
 
 function ExperienceCard({ experience, index }: { experience: Experience; index: number }) {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });

@@ -12,42 +12,51 @@ interface Project {
   technologies: string[];
 }
 
-// ============================================
-// EDIT YOUR PROJECTS HERE - Easy to customize!
-// ============================================
+
 const projects: Project[] = [
-  // Project 1
   {
-    title: 'Project Title 1',                    // Change this to your project name
-    role: 'Full Stack Developer',                // Your role on the project
-    company: 'Company Name',                     // Company/Organization (optional - remove if personal project)
-    date: '2024',                                // When you did this project
-    description: 'Add your project description here. Describe what you built, the impact it had, and your key contributions.',
-    technologies: ['React', 'Node.js', 'MongoDB'], // Tech stack you used
+    title: 'FinMate',
+    role: 'Backend Engineer',
+    company: 'CodeLinc 10 Hackathon (2nd Place, $2,500 Award)',
+    date: 'Oct 2025',
+    description:
+      'Developed an AI-powered financial assistant using Claude Sonnet 4 via AWS Bedrock with a RAG-based agentic backend for personalized employee benefits guidance. Built a hybrid AWS stack with Lambda, API Gateway, S3, RDS (MySQL), and EC2, implementing secure CRUD operations, prompt engineering, and real-time retrieval optimization.',
+    technologies: ['AWS Bedrock', 'Claude Sonnet 4', 'Lambda', 'API Gateway', 'RDS (MySQL)', 'S3', 'EC2', 'TypeScript'],
   },
 
-  // Project 2
   {
-    title: 'Project Title 2',
+    title: 'FlowIQ',
+    role: 'Full Stack Developer',
+    date: 'Oct 2025',
+    description:
+      'Engineered an AI-enhanced analytics and visualization platform that automates data tracking, insights generation, and performance optimization. Built a React + TypeScript frontend with Tailwind CSS, Recharts, and react-query, and a modular analytics engine designed for scalability with MongoDB and AWS/GCP integration.',
+    technologies: ['React', 'TypeScript', 'Tailwind CSS', 'Recharts', 'react-query', 'Vite', 'MongoDB', 'AWS'],
+  },
+
+
+  {
+    title: 'Stationery',
+    role: 'Mobile Developer',
+    company: 'Congressional App Challenge',
+    date: 'Jan 2025 – Mar 2025',
+    description:
+      'Built a career exploration app using Kotlin and MongoDB to deliver personalized, data-driven career advising features. Collaborated with users through beta testing, improving UX and usability; received Special Recognition for Innovation at the Congressional App Challenge.',
+    technologies: ['Kotlin', 'MongoDB', 'Android Studio', 'NoSQL', 'Figma'],
+  },
+
+  {
+    title: 'BobcatLib',
     role: 'Software Engineer',
-    company: 'Company Name',
-    date: '2023',
-    description: 'Add your project description here. Describe what you built, the impact it had, and your key contributions.',
-    technologies: ['Python', 'Django', 'PostgreSQL'],
+    company: 'Bobcat Robotics – FRC Team 177',
+    date: 'May 2024',
+    description:
+      'Developed a modular robotics software library with intuitive interfaces and optimized control algorithms. Collaborated with team engineers to translate system requirements into scalable technical solutions and created maintainable documentation for long-term usability.',
+    technologies: ['Java', 'WPILib', 'Gradle', 'Git', 'FRC Robotics'],
   },
 
-  // Project 3
-  {
-    title: 'Project Title 3',
-    role: 'Developer',
-    date: '2023',                                // Note: No company listed for this one
-    description: 'Add your project description here. Describe what you built, the impact it had, and your key contributions.',
-    technologies: ['TypeScript', 'Next.js', 'AWS'],
-  },
+  // Add more projects by copying the format above
 ];
-// ============================================
-// END OF PROJECTS - Don't edit below this unless you know what you're doing
-// ============================================
+
 
 function ProjectCard({ project, index }: { project: Project; index: number }) {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
