@@ -13,7 +13,7 @@ export default function Hero() {
   const [mounted, setMounted] = useState(false);
 
   const fullName = 'Pranay Kakkar';
-  const fullRole = 'Computer Science Student';
+  const fullRole = 'CS @ UConn';
 
   useEffect(() => {
     setMounted(true);
@@ -100,7 +100,7 @@ export default function Hero() {
               <svg className="w-4 h-4 text-accent" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
               </svg>
-              <span className="text-sm font-medium">South Windsor, CT</span>
+              <span className="text-sm font-medium">Connecticut</span>
             </div>
           </div>
         )}
@@ -116,7 +116,7 @@ export default function Hero() {
             style={{ transitionDelay: '200ms' }}
           >
             <p className="text-base md:text-lg text-foreground/70 w-full max-w-2xl mb-12 leading-relaxed font-light text-center px-4">
-              Passionate about building innovative solutions and exploring the intersection of technology and creativity. Currently pursuing Computer Science with a focus on full-stack development and software engineering.
+              Hey, my name is Pranay Kakkar — I am a Computer Science major at the University of Connecticut. I have always been interested in using data and machine learning to solve real-world problems alongside the usual tinkering with robotics! I love contributing to research and have had experience with various labs, researching in various disciplines like crypotgraphy, machine learning, physics, and lasers. Outside of academics, I am big into soccer, astronomy, and creating small side projects to learn new skills. People I have worked with often describe me as calm under pressure and very communicative. I would love to connect with you!
             </p>
           </div>
         )}

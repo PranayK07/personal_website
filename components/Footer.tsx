@@ -32,7 +32,7 @@ export default function Footer() {
             © 2025 Pranay Kakkar. All rights reserved.
           </div>
           <div className="flex items-center gap-2 text-accent order-1 sm:order-2">
-            <span className="text-xs sm:text-sm">New York Time:</span>
+            <span className="text-xs sm:text-sm">My time zone:</span>
             <span className="font-mono text-xs sm:text-sm font-medium">{time}</span>
           </div>
         </div>

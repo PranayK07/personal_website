@@ -43,10 +43,10 @@ export default function Contact() {
                   </div>
                   <p className="text-xs text-muted mb-2 uppercase tracking-wider">Email</p>
                   <a
-                    href="mailto:your.email@example.com"
+                    href="mailto:pranay.kakkar@outlook.com"
                     className="text-sm text-accent hover:text-accent-hover transition-colors font-medium"
                   >
-                    your.email@example.com
+                    pranay.kakkar@outlook.com
                   </a>
                 </div>
 
@@ -59,7 +59,7 @@ export default function Contact() {
                     📍
                   </div>
                   <p className="text-xs text-muted mb-2 uppercase tracking-wider">Location</p>
-                  <p className="text-sm text-foreground font-medium">South Windsor, CT</p>
+                  <p className="text-sm text-foreground font-medium">Connecticut</p>
                 </div>
               </div>
 
@@ -71,7 +71,7 @@ export default function Contact() {
                 </h4>
                 <div className="flex flex-wrap justify-center gap-3">
                   <a
-                    href="https://github.com/yourusername"
+                    href="https://github.com/PranayK07"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2 px-5 py-3 bg-section-bg/50 backdrop-blur-sm rounded-xl hover:bg-accent/10 transition-all duration-300 hover:scale-105 hover:shadow-[0_0_15px_rgba(20,184,166,0.2)] group"
@@ -83,7 +83,7 @@ export default function Contact() {
                   </a>
 
                   <a
-                    href="https://linkedin.com/in/yourusername"
+                    href="https://linkedin.com/in/pranay-kakkar"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2 px-5 py-3 bg-section-bg/50 backdrop-blur-sm rounded-xl hover:bg-accent/10 transition-all duration-300 hover:scale-105 hover:shadow-[0_0_15px_rgba(20,184,166,0.2)] group"
@@ -95,7 +95,7 @@ export default function Contact() {
                   </a>
 
                   <a
-                    href="https://twitter.com/yourusername"
+                    href="https://twitter.com/pranay_kakkar"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2 px-5 py-3 bg-section-bg/50 backdrop-blur-sm rounded-xl hover:bg-accent/10 transition-all duration-300 hover:scale-105 hover:shadow-[0_0_15px_rgba(20,184,166,0.2)] group"

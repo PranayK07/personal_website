@@ -16,24 +16,35 @@ interface Experience {
 // EDIT YOUR WORK EXPERIENCE HERE - Easy to customize!
 // ============================================
 const experiences: Experience[] = [
-  // Experience 1
+
   {
-    title: 'Software Engineer Intern',          // Your job title
-    company: 'Company Name',                    // Company/Organization name
-    location: 'City, State',                    // Where you worked
-    date: 'Summer 2024',                        // When you worked there (e.g., "Jan 2024 - Present", "Summer 2024")
-    description: 'Add your work experience description here. Describe your responsibilities, achievements, and the impact you made during your time at the company.',
-    technologies: ['React', 'Node.js', 'AWS'],  // Technologies you used
+    title: 'AI/ML Researcher',
+    company: 'University of Connecticut Undergraduate Research',
+    location: 'Storrs, CT',
+    date: 'May 2024 – Aug 2024',
+    description:
+      'Conducted research on data-driven biometric cryptography solutions, co-developing Fingerprint Privacy models with 92% accuracy using ResNet, DenseNet, and SVMs. Engineered CUDA-accelerated feature extraction algorithms reducing runtime by 40% while processing 400K+ structured and unstructured samples. Documented ML architectures achieving 90–94% accuracy, enhancing data communication and automation.',
+    technologies: ['PyTorch', 'scikit-learn', 'CUDA', 'Python', 'Machine Learning', 'OpenCV', 'ETL', 'Git'],
   },
 
-  // Experience 2
   {
-    title: 'Research Assistant',
-    company: 'University Name',
-    location: 'City, State',
-    date: '2023 - 2024',
-    description: 'Add your work experience description here. Describe your responsibilities, achievements, and the impact you made during your time at the company.',
-    technologies: ['Python', 'TensorFlow', 'Data Analysis'],
+    title: 'Physics Lab Assistant',
+    company: 'The McCarron Group, University of Connecticut',
+    location: 'Storrs, CT',
+    date: 'May 2023 – Sep 2023',
+    description:
+      'Automated Python-based data collection and visualization workflows for high-precision laser calibration experiments. Applied statistical regression models to improve measurement accuracy and instrument control. Supported demonstrations and reports for 50+ researchers, improving productivity and data organization within the research team.',
+    technologies: ['Python', 'Matplotlib', 'Pandas', 'NumPy', 'Data Analysis', 'SciPy', 'SQL'],
+  },
+
+  {
+    title: 'Programming Lead',
+    company: 'Bobcat Robotics – FRC Team 177',
+    location: 'South Windsor, CT',
+    date: '2024 – 2025',
+    description:
+      'Engineered a modular robotics software library with intuitive user interfaces and scalable architecture. Collaborated with the robotics team to translate functional requirements into efficient control algorithms. Authored documentation ensuring maintainability and extensibility for future teams.',
+    technologies: ['Java', 'Git', 'Python', 'JavaScript', 'Robotics', 'Motion Control', 'Team Leadership'],
   },
 
   // Add more experiences by copying the format above
