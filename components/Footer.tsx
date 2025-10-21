@@ -25,15 +25,15 @@ export default function Footer() {
   }, []);
 
   return (
-    <footer className="py-8 px-4 sm:px-6 lg:px-8 border-t border-accent-cyan/20">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="text-footer-text text-sm">
+    <footer className="py-10 px-4 sm:px-6 lg:px-8 border-t border-card-border bg-card-bg/30">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-3 text-center">
+          <div className="text-footer-text text-sm order-2 sm:order-1">
             © 2025 Pranay Kakkar. All rights reserved.
           </div>
-          <div className="flex items-center gap-2 text-accent-cyan">
-            <span className="text-sm">New York Time:</span>
-            <span className="font-mono text-sm font-medium">{time}</span>
+          <div className="flex items-center gap-2 text-accent-cyan order-1 sm:order-2">
+            <span className="text-xs sm:text-sm">New York Time:</span>
+            <span className="font-mono text-xs sm:text-sm font-medium">{time}</span>
           </div>
         </div>
       </div>

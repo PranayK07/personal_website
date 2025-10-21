@@ -25,25 +25,25 @@ export default function Navigation() {
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled ? 'bg-background/95 backdrop-blur-sm border-b border-accent-cyan/20' : 'bg-transparent'
+        scrolled ? 'bg-background/90 backdrop-blur-md border-b border-card-border shadow-lg' : 'bg-transparent'
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="text-xl font-bold text-accent-cyan hover:text-accent-cyan-light transition-colors">
             PK
           </Link>
           
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4 sm:gap-6">
             <button
               onClick={() => scrollToSection('projects')}
-              className="text-foreground hover:text-accent-cyan transition-colors text-sm font-medium"
+              className="text-foreground/80 hover:text-accent-cyan transition-colors text-sm font-medium"
             >
               Projects
             </button>
             <button
               onClick={() => scrollToSection('contact')}
-              className="text-foreground hover:text-accent-cyan transition-colors text-sm font-medium"
+              className="text-foreground/80 hover:text-accent-cyan transition-colors text-sm font-medium"
             >
               Contact
             </button>
@@ -51,7 +51,7 @@ export default function Navigation() {
               href="/Resume_Template_PDF.pdf"
               target="_blank"
               rel="noopener noreferrer"
-              className="px-4 py-2 bg-accent-cyan text-background rounded-lg hover:bg-accent-cyan-light transition-colors text-sm font-medium"
+              className="px-4 py-2 bg-accent-cyan text-background rounded-lg hover:bg-accent-cyan-light transition-all hover:shadow-lg hover:shadow-accent-cyan/20 text-sm font-medium"
             >
               Resume
             </a>

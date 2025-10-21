@@ -1,15 +1,17 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 :root {
-  /* Dark mode only - minimalist palette */
-  --background: #0F172A;
-  --foreground: #E5E7EB;
-  --heading: #F9FAFB;
-  --text-muted: #9CA3AF;
-  --accent-cyan: #14B8A6;
-  --accent-cyan-light: #2DD4BF;
-  --footer-text: #6B7280;
-  --card-bg: #1E293B;
+  /* Modern minimalist dark palette */
+  --background: #0e1621;
+  --foreground: #e4e4e7;
+  --heading: #fafafa;
+  --text-muted: #a1a1aa;
+  --accent-cyan: #14b8a6;
+  --accent-cyan-light: #2dd4bf;
+  --footer-text: #71717a;
+  --card-bg: #1a222e;
+  --card-border: rgba(20, 184, 166, 0.15);
 }
 
 @theme inline {
@@ -21,6 +23,7 @@
   --color-accent-cyan-light: var(--accent-cyan-light);
   --color-footer-text: var(--footer-text);
   --color-card-bg: var(--card-bg);
+  --color-card-border: var(--card-border);
 }
 
 * {
@@ -36,11 +39,12 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   overflow-x: hidden;
+  line-height: 1.6;
 }
 
-/* Custom scrollbar for minimalist look */
+/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
 }
