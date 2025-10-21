@@ -172,7 +172,7 @@ export default function TechStack() {
   };
 
   return (
-    <section id="about" className="section py-32" style={{ overflow: 'visible' }}>
+    <section id="stack" className="section py-32" style={{ overflow: 'visible' }}>
       <div className="container" style={{ overflow: 'visible' }}>
         <div
           ref={ref as RefObject<HTMLDivElement>}
