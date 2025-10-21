@@ -12,13 +12,15 @@ export default function Navigation() {
       
       // Update active section based on scroll position
       const sections = ['home', 'about', 'projects', 'contact'];
-      const scrollPosition = window.scrollY + 100;
+      const scrollPosition = window.scrollY + window.innerHeight / 2;
       
-      for (const section of sections) {
+      // Check sections in reverse order to handle the bottom of the page correctly
+      for (let i = sections.length - 1; i >= 0; i--) {
+        const section = sections[i];
         const element = document.getElementById(section);
         if (element) {
-          const { offsetTop, offsetHeight } = element;
-          if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
+          const { offsetTop } = element;
+          if (scrollPosition >= offsetTop) {
             setActiveSection(section);
             break;
           }
@@ -27,6 +29,7 @@ export default function Navigation() {
     };
 
     window.addEventListener('scroll', handleScroll);
+    handleScroll(); // Call once on mount
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -47,15 +50,13 @@ export default function Navigation() {
   return (
     <nav className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50">
       <div className="flex items-center justify-center">
-        <div className="bg-background/20 backdrop-blur-md border border-accent/20 rounded-full px-32 py-8 shadow-lg">
-          <div className="flex items-center">
+        <div className="bg-background/20 backdrop-blur-md border border-accent/20 rounded-full px-16 py-6 shadow-lg">
+          <div className="flex items-center gap-8">
             {navItems.map((item, index) => (
               <button
                 key={item.id}
                 onClick={() => scrollToSection(item.id)}
-                className={`px-12 py-6 rounded-full transition-all duration-300 text-sm font-medium ${
-                  index < navItems.length - 1 ? 'mr-24' : ''
-                } ${
+                className={`px-16 py-8 rounded-full transition-all duration-300 text-xs font-medium ${
                   activeSection === item.id 
                     ? 'bg-accent text-background shadow-lg' 
                     : 'text-foreground hover:text-accent hover:bg-accent/10'
