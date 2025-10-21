@@ -47,14 +47,14 @@ export default function Navigation() {
   return (
     <nav className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50">
       <div className="flex items-center justify-center">
-        <div className="bg-background/20 backdrop-blur-md border border-accent/20 rounded-full px-20 py-8 shadow-lg">
+        <div className="bg-background/20 backdrop-blur-md border border-accent/20 rounded-full px-32 py-8 shadow-lg">
           <div className="flex items-center">
             {navItems.map((item, index) => (
               <button
                 key={item.id}
                 onClick={() => scrollToSection(item.id)}
-                className={`px-12 py-6 rounded-full transition-all duration-300 text-base font-medium ${
-                  index < navItems.length - 1 ? 'mr-16' : ''
+                className={`px-12 py-6 rounded-full transition-all duration-300 text-sm font-medium ${
+                  index < navItems.length - 1 ? 'mr-24' : ''
                 } ${
                   activeSection === item.id 
                     ? 'bg-accent text-background shadow-lg' 
