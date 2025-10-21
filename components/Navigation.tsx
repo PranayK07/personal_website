@@ -11,7 +11,7 @@ export default function Navigation() {
       setIsScrolled(window.scrollY > 50);
 
       // Update active section based on scroll position
-      const sections = ['home', 'about', 'projects', 'contact'];
+      const sections = ['home', 'experience', 'stack', 'projects', 'contact'];
       const scrollPosition = window.scrollY + 200; // Distance from top of viewport
 
       // Find which section is currently in view
@@ -50,7 +50,8 @@ export default function Navigation() {
 
   const navItems = [
     { id: 'home', label: 'Home' },
-    { id: 'about', label: 'About' },
+    { id: 'experience', label: 'Experience' },
+    { id: 'stack', label: 'Stack' },
     { id: 'projects', label: 'Projects' },
     { id: 'contact', label: 'Contact' }
   ];
@@ -97,9 +98,15 @@ export default function Navigation() {
             >
               {activeSection === item.id && (
                 <span
-                  className="absolute inset-0 bg-gradient-to-r from-accent to-accent-hover rounded-2xl
-                             shadow-[0_0_20px_rgba(20,184,166,0.4)]
-                             animate-in fade-in duration-300"
+                  className="absolute inset-0 bg-gradient-to-r from-accent to-accent-hover rounded-2xl animate-in fade-in duration-300"
+                  style={{
+                    boxShadow: `
+                      0 0 50px rgba(20, 184, 166, 0.7),
+                      0 0 80px rgba(20, 184, 166, 0.5),
+                      0 0 120px rgba(20, 184, 166, 0.3),
+                      0 0 160px rgba(20, 184, 166, 0.15)
+                    `
+                  }}
                 />
               )}
               {activeSection !== item.id && (

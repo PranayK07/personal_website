@@ -3,53 +3,46 @@
 import { useScrollAnimation } from '@/hooks/useScrollAnimation';
 import { useState, MouseEvent, RefObject } from 'react';
 
-interface Project {
+interface Experience {
   title: string;
-  role: string;
-  company?: string;
+  company: string;
+  location: string;
   date: string;
   description: string;
   technologies: string[];
 }
 
 // ============================================
-// EDIT YOUR PROJECTS HERE - Easy to customize!
+// EDIT YOUR WORK EXPERIENCE HERE - Easy to customize!
 // ============================================
-const projects: Project[] = [
-  // Project 1
+const experiences: Experience[] = [
+  // Experience 1
   {
-    title: 'Project Title 1',                    // Change this to your project name
-    role: 'Full Stack Developer',                // Your role on the project
-    company: 'Company Name',                     // Company/Organization (optional - remove if personal project)
-    date: '2024',                                // When you did this project
-    description: 'Add your project description here. Describe what you built, the impact it had, and your key contributions.',
-    technologies: ['React', 'Node.js', 'MongoDB'], // Tech stack you used
+    title: 'Software Engineer Intern',          // Your job title
+    company: 'Company Name',                    // Company/Organization name
+    location: 'City, State',                    // Where you worked
+    date: 'Summer 2024',                        // When you worked there (e.g., "Jan 2024 - Present", "Summer 2024")
+    description: 'Add your work experience description here. Describe your responsibilities, achievements, and the impact you made during your time at the company.',
+    technologies: ['React', 'Node.js', 'AWS'],  // Technologies you used
   },
 
-  // Project 2
+  // Experience 2
   {
-    title: 'Project Title 2',
-    role: 'Software Engineer',
-    company: 'Company Name',
-    date: '2023',
-    description: 'Add your project description here. Describe what you built, the impact it had, and your key contributions.',
-    technologies: ['Python', 'Django', 'PostgreSQL'],
+    title: 'Research Assistant',
+    company: 'University Name',
+    location: 'City, State',
+    date: '2023 - 2024',
+    description: 'Add your work experience description here. Describe your responsibilities, achievements, and the impact you made during your time at the company.',
+    technologies: ['Python', 'TensorFlow', 'Data Analysis'],
   },
 
-  // Project 3
-  {
-    title: 'Project Title 3',
-    role: 'Developer',
-    date: '2023',                                // Note: No company listed for this one
-    description: 'Add your project description here. Describe what you built, the impact it had, and your key contributions.',
-    technologies: ['TypeScript', 'Next.js', 'AWS'],
-  },
+  // Add more experiences by copying the format above
 ];
 // ============================================
-// END OF PROJECTS - Don't edit below this unless you know what you're doing
+// END OF WORK EXPERIENCE - Don't edit below this unless you know what you're doing
 // ============================================
 
-function ProjectCard({ project, index }: { project: Project; index: number }) {
+function ExperienceCard({ experience, index }: { experience: Experience; index: number }) {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
 
@@ -106,20 +99,19 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4">
             <div className="text-center sm:text-left">
               <h3 className="heading-3 mb-2 group-hover:text-accent transition-colors duration-300">
-                {project.title}
+                {experience.title}
               </h3>
               <p className="text-accent font-medium">
-                {project.role}
-                {project.company && ` at ${project.company}`}
+                {experience.company} • {experience.location}
               </p>
             </div>
-            <span className="text-muted text-sm mt-2 sm:mt-0 text-center sm:text-right">{project.date}</span>
+            <span className="text-muted text-sm mt-2 sm:mt-0 text-center sm:text-right">{experience.date}</span>
           </div>
           <p className="text-muted mb-6 leading-relaxed text-center sm:text-left">
-            {project.description}
+            {experience.description}
           </p>
           <div className="flex flex-wrap gap-2">
-            {project.technologies.map((tech, techIndex) => (
+            {experience.technologies.map((tech, techIndex) => (
               <span
                 key={techIndex}
                 className="px-3 py-1 text-xs font-medium bg-accent/10 text-accent rounded-full hover:bg-accent/20 hover:scale-105 transition-all duration-200 cursor-default"
@@ -137,22 +129,22 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
   );
 }
 
-export default function Projects() {
+export default function WorkExperience() {
   const [ref, isVisible] = useScrollAnimation(0.2);
 
   return (
-    <section id="projects" className="section">
+    <section id="experience" className="section">
       <div className="container text-center">
         <div
           ref={ref as RefObject<HTMLDivElement>}
           className={`scroll-fade-in ${isVisible ? 'visible' : ''}`}
         >
           <h2 className="heading-2 text-center mb-12">
-            Projects & Achievements
+            Work Experience
           </h2>
           <div className="grid gap-6 max-w-2xl mx-auto">
-            {projects.map((project, index) => (
-              <ProjectCard key={index} project={project} index={index} />
+            {experiences.map((experience, index) => (
+              <ExperienceCard key={index} experience={experience} index={index} />
             ))}
           </div>
         </div>

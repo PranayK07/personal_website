@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+
+import { useEffect, useRef, useState, RefObject } from 'react';
 import { useScrollAnimation } from '@/hooks/useScrollAnimation';
 import Image from 'next/image';
 
@@ -93,14 +94,19 @@ function TechCard({ tech, onHover }: { tech: Tech; onHover: (hovering: boolean) 
     <div
       onMouseEnter={() => onHover(true)}
       onMouseLeave={() => onHover(false)}
-      className="group flex-shrink-0 flex flex-col items-center justify-center p-4 card min-w-[120px] hover:scale-105 hover:shadow-lg transition-all duration-300 cursor-pointer"
+      className="group flex-shrink-0 flex flex-col items-center justify-center px-6 py-12 min-w-[140px] min-h-[180px] hover:scale-105 transition-all duration-300 cursor-pointer rounded-xl border border-white/0 shadow-[0_4px_16px_0_rgba(20,184,166,0.15)] hover:shadow-[0_4px_20px_0_rgba(20,184,166,0.3)] hover:border-white/20"
+      style={{
+        backgroundColor: 'rgba(10, 10, 10, 0.2)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+      }}
     >
       <div
-        className="w-12 h-12 mb-3 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform"
+        className="w-14 h-14 mb-3 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform"
         style={{ backgroundColor: tech.color + '15' }}
       >
         {tech.logo ? (
-          <div className="relative w-8 h-8">
+          <div className="relative w-10 h-10">
             <Image
               src={tech.logo}
               alt={`${tech.name} logo`}
@@ -110,7 +116,7 @@ function TechCard({ tech, onHover }: { tech: Tech; onHover: (hovering: boolean) 
             />
           </div>
         ) : (
-          <span className="text-2xl">{tech.icon}</span>
+          <span className="text-3xl">{tech.icon}</span>
         )}
       </div>
       <span className="text-sm font-medium text-foreground text-center">
@@ -166,27 +172,41 @@ export default function TechStack() {
   };
 
   return (
-    <section id="about" className="section py-20">
-      <div className="container">
+    <section id="about" className="section py-32" style={{ overflow: 'visible' }}>
+      <div className="container" style={{ overflow: 'visible' }}>
         <div
-          ref={ref}
+          ref={ref as RefObject<HTMLDivElement>}
           className={`scroll-fade-in ${isVisible ? 'visible' : ''}`}
+          style={{ overflow: 'visible' }}
         >
-          <h2 className="heading-2 text-center mb-4">
+          <h2 className="heading-2 text-center mb-12">
             Tech Stack
           </h2>
-          <p className="text-center text-foreground/60 mb-12 max-w-2xl mx-auto">
-            Technologies and tools I work with
-          </p>
 
-          <div className="relative max-w-5xl mx-auto">
+          <div className="relative max-w-5xl mx-auto my-16" style={{ overflow: 'visible' }}>
             {/* Gradient overlays for smooth fade effect */}
-            <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
-            <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
+            <div
+              className="absolute left-0 top-0 bottom-0 w-32 z-10 pointer-events-none"
+              style={{
+                background: 'linear-gradient(to right, #0a0a0a 0%, rgba(10, 10, 10, 0.8) 40%, transparent 100%)'
+              }}
+            />
+            <div
+              className="absolute right-0 top-0 bottom-0 w-32 z-10 pointer-events-none"
+              style={{
+                background: 'linear-gradient(to left, #0a0a0a 0%, rgba(10, 10, 10, 0.8) 40%, transparent 100%)'
+              }}
+            />
 
             <div
               ref={scrollContainerRef}
-              className="flex gap-4 overflow-x-hidden scrollbar-hide py-4"
+              className="flex gap-4 scrollbar-hide"
+              style={{
+                overflowX: 'hidden',
+                overflowY: 'visible',
+                paddingTop: '4rem',
+                paddingBottom: '4rem'
+              }}
             >
               {/* Triple the tech stack for seamless infinite scroll */}
               {[...techStack, ...techStack, ...techStack].map((tech, index) => (
@@ -198,11 +218,6 @@ export default function TechStack() {
               ))}
             </div>
           </div>
-
-          {/* Subtle hint that hovering pauses */}
-          <p className="text-center text-foreground/40 text-xs mt-6">
-            Hover over a card to pause
-          </p>
         </div>
       </div>
     </section>

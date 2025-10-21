@@ -1,104 +1,126 @@
 'use client';
 
-import { useScrollAnimation } from '@/hooks/useScrollAnimation';
 import { useState, useEffect } from 'react';
 
 export default function Hero() {
-  const [ref, isVisible] = useScrollAnimation(0.3);
-  const [typedText, setTypedText] = useState('');
-  const [showCursor, setShowCursor] = useState(true);
-  const fullText = 'Computer Science Student';
+  const [typedName, setTypedName] = useState('');
+  const [typedRole, setTypedRole] = useState('');
+  const [showNameCursor, setShowNameCursor] = useState(true);
+  const [showRoleCursor, setShowRoleCursor] = useState(false);
+  const [nameComplete, setNameComplete] = useState(false);
+  const [roleComplete, setRoleComplete] = useState(false);
+  const [showDescription, setShowDescription] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  const fullName = 'Pranay Kakkar';
+  const fullRole = 'Computer Science Student';
 
   useEffect(() => {
-    let currentIndex = 0;
-    const typingInterval = setInterval(() => {
-      if (currentIndex <= fullText.length) {
-        setTypedText(fullText.slice(0, currentIndex));
-        currentIndex++;
+    setMounted(true);
+
+    // Type the name first
+    let nameIndex = 0;
+    const nameTypingInterval = setInterval(() => {
+      if (nameIndex <= fullName.length) {
+        setTypedName(fullName.slice(0, nameIndex));
+        nameIndex++;
       } else {
-        clearInterval(typingInterval);
+        clearInterval(nameTypingInterval);
+        setNameComplete(true);
+        setShowNameCursor(false);
+
+        // Start typing the role after a short delay
+        setTimeout(() => {
+          setShowRoleCursor(true);
+          let roleIndex = 0;
+          const roleTypingInterval = setInterval(() => {
+            if (roleIndex <= fullRole.length) {
+              setTypedRole(fullRole.slice(0, roleIndex));
+              roleIndex++;
+            } else {
+              clearInterval(roleTypingInterval);
+              setRoleComplete(true);
+
+              // Show description after role is complete
+              setTimeout(() => {
+                setShowDescription(true);
+              }, 300);
+            }
+          }, 60);
+        }, 400);
       }
     }, 100);
 
-    const cursorInterval = setInterval(() => {
-      setShowCursor((prev) => !prev);
+    const nameCursorInterval = setInterval(() => {
+      setShowNameCursor((prev) => !prev);
+    }, 500);
+
+    const roleCursorInterval = setInterval(() => {
+      setShowRoleCursor((prev) => !prev);
     }, 500);
 
     return () => {
-      clearInterval(typingInterval);
-      clearInterval(cursorInterval);
+      clearInterval(nameTypingInterval);
+      clearInterval(nameCursorInterval);
+      clearInterval(roleCursorInterval);
     };
   }, []);
 
   return (
-    <section id="home" className="min-h-screen flex items-center justify-center relative">
-      <div className="container text-center relative z-10">
-        <div
-          ref={ref}
-          className={`scroll-fade-in ${isVisible ? 'visible' : ''}`}
-        >
-          <div className="mb-6">
-            <h1 className="heading-1 text-foreground font-bold">
-              Pranay Kakkar
-            </h1>
-          </div>
-
-          <div className="text-large mb-4 min-h-[2rem] flex items-center justify-center">
-            <span className="text-accent font-medium">
-              {typedText}
-              <span className={`inline-block w-0.5 h-6 bg-accent ml-1 ${showCursor ? 'opacity-100' : 'opacity-0'}`} />
-            </span>
-          </div>
-
-          <p className="text-muted mb-12 flex items-center justify-center gap-2">
-            <svg className="w-4 h-4 text-accent" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-            </svg>
-            South Windsor, CT
-          </p>
-
-          <p className="text-lg text-muted max-w-2xl mx-auto mb-12 leading-relaxed">
-            Passionate about building innovative solutions and exploring the intersection
-            of technology and creativity. Currently pursuing Computer Science with a focus
-            on full-stack development and software engineering.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button
-              onClick={() => {
-                const element = document.getElementById('projects');
-                if (element) {
-                  element.scrollIntoView({ behavior: 'smooth' });
-                }
-              }}
-              className="btn group relative overflow-hidden"
-            >
-              <span className="relative z-10 flex items-center justify-center gap-2">
-                View My Work
-                <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </span>
-              <span className="absolute inset-0 bg-gradient-to-r from-accent-hover to-accent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            </button>
-            <button
-              onClick={() => {
-                const element = document.getElementById('contact');
-                if (element) {
-                  element.scrollIntoView({ behavior: 'smooth' });
-                }
-              }}
-              className="btn bg-transparent border-2 border-accent text-accent hover:bg-accent hover:text-background relative group overflow-hidden"
-            >
-              <span className="relative z-10 flex items-center justify-center gap-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-                Get In Touch
-              </span>
-            </button>
-          </div>
+    <section id="home" className="min-h-screen flex items-center justify-center relative px-4">
+      <div className="w-full max-w-4xl mx-auto text-center relative z-10">
+        {/* Name with typing animation */}
+        <div className="mb-6 min-h-[5rem] md:min-h-[6rem] lg:min-h-[7rem] flex items-center justify-center">
+          <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold text-foreground tracking-tight">
+            {typedName}
+            {!nameComplete && (
+              <span className={`inline-block w-1 h-16 md:h-20 lg:h-24 bg-foreground ml-2 transition-opacity duration-100 ${showNameCursor ? 'opacity-100' : 'opacity-0'}`} />
+            )}
+          </h1>
         </div>
+
+        {/* Typing effect role */}
+        <div className="text-xl md:text-2xl mb-8 min-h-[2.5rem] flex items-center justify-center">
+          <span className="text-accent font-medium tracking-wide">
+            {typedRole}
+            {!roleComplete && (
+              <span className={`inline-block w-0.5 h-6 md:h-7 bg-accent ml-1 transition-opacity duration-100 ${showRoleCursor ? 'opacity-100' : 'opacity-0'}`} />
+            )}
+          </span>
+        </div>
+
+        {/* Location */}
+        {roleComplete && (
+          <div
+            className={`transform transition-all duration-700 ease-out ${
+              showDescription ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
+            }`}
+          >
+            <div className="flex items-center justify-center gap-2 text-foreground/60 mb-10">
+              <svg className="w-4 h-4 text-accent" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+              </svg>
+              <span className="text-sm font-medium">South Windsor, CT</span>
+            </div>
+          </div>
+        )}
+
+        {/* Bio with unique reveal animation */}
+        {roleComplete && (
+          <div
+            className={`transform transition-all duration-1000 ease-out flex justify-center ${
+              showDescription
+                ? 'translate-x-0 opacity-100 scale-100 blur-0'
+                : 'translate-x-8 opacity-0 scale-95 blur-sm'
+            }`}
+            style={{ transitionDelay: '200ms' }}
+          >
+            <p className="text-base md:text-lg text-foreground/70 w-full max-w-2xl mb-12 leading-relaxed font-light text-center px-4">
+              Passionate about building innovative solutions and exploring the intersection of technology and creativity. Currently pursuing Computer Science with a focus on full-stack development and software engineering.
+            </p>
+          </div>
+        )}
+
       </div>
     </section>
   );
