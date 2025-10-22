@@ -58,6 +58,16 @@ const projects: Project[] = [
     githubUrl: 'https://github.com/BobcatRobotics/BobcatLib',
   },
 
+  {
+    title: 'Face Classification with SVMs',
+    role: 'Independent Project',
+    company: '',
+    date: 'Jun 2025',
+    description: 'Built a face recognition model on the LFW Deep Funneled dataset using PCA and Support Vector Machines with linear, RBF, and polynomial kernels; achieved highest accuracy with RBF on facial feature classification.',
+    githubUrl: 'https://github.com/PranayK07/SVM_regressiontest',
+    technologies: ['Python', 'scikit-learn', 'PCA', 'SVM', 'OpenCV'],
+},
+
   // Add more projects by copying the format above
 ];
 
