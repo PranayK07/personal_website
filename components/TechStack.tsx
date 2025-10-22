@@ -147,8 +147,7 @@ export default function TechStack() {
 
     let animationId: number;
     let scrollPosition = 0;
-    const scrollSpeed = 0.8; // Slower, smoother scrolling
-
+    const scrollSpeed = 0.7; 
     const animate = () => {
       if (!isPaused) {
         scrollPosition += scrollSpeed;
