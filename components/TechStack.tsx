@@ -85,7 +85,7 @@ const techStack: Tech[] = [
   {
     name: 'Kotlin',
     logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/kotlin/kotlin-original.svg',
-    color: '#d500aeff'
+    color: '#d500ae'
   },
   {
     name: 'Docker',
@@ -95,7 +95,7 @@ const techStack: Tech[] = [
   {
     name: 'CUDA',
     logo: 'https://www.vectorlogo.zone/logos/nvidia/nvidia-icon.svg',
-    color: '#078912ff'
+    color: '#078912'
   }
 ];
 
@@ -147,7 +147,7 @@ export default function TechStack() {
 
     let animationId: number;
     let scrollPosition = 0;
-    const scrollSpeed = 0.5; // Slower, smoother scrolling
+    const scrollSpeed = 0.8; // Slower, smoother scrolling
 
     const animate = () => {
       if (!isPaused) {
