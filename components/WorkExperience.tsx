@@ -52,7 +52,6 @@ const experiences: Experience[] = [
 function ExperienceCard({ experience, index }: { experience: Experience; index: number }) {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
 
   const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -67,10 +66,6 @@ function ExperienceCard({ experience, index }: { experience: Experience; index: 
     setMousePosition({ x: 0, y: 0 });
   };
 
-  const handleClick = () => {
-    setIsExpanded(!isExpanded);
-  };
-
   const rotateX = isHovering ? mousePosition.y * 10 : 0;
   const rotateY = isHovering ? mousePosition.x * 10 : 0;
 
@@ -79,8 +74,7 @@ function ExperienceCard({ experience, index }: { experience: Experience; index: 
       onMouseMove={handleMouseMove}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      onClick={handleClick}
-      className="relative group perspective-1000 cursor-pointer"
+      className="relative group perspective-1000"
       style={{
         transform: `perspective(1000px) rotateX(${-rotateX}deg) rotateY(${rotateY}deg) ${isHovering ? 'translateZ(20px)' : 'translateZ(0)'}`,
         transition: 'transform 0.1s ease-out',
@@ -122,26 +116,10 @@ function ExperienceCard({ experience, index }: { experience: Experience; index: 
             <span className="text-muted text-sm whitespace-nowrap flex-shrink-0 text-right">{experience.date}</span>
           </div>
           
-          {/* Collapsible content */}
-          <div
-            className="overflow-hidden transition-all duration-500 ease-in-out"
-            style={{
-              maxHeight: isExpanded ? '1000px' : '120px',
-            }}
-          >
-            <p className="text-muted mb-6 leading-relaxed text-left">
-              {experience.description}
-            </p>
-            
-            {isExpanded && (
-              <div className="mt-6 pt-6 border-t border-accent/20 animate-fadeIn">
-                <h4 className="text-accent font-medium mb-3 text-left">Additional Details</h4>
-                <p className="text-muted mb-4 text-left leading-relaxed">
-                  Click to collapse and see less information about this role.
-                </p>
-              </div>
-            )}
-          </div>
+          {/* Description */}
+          <p className="text-muted mb-6 leading-relaxed text-left">
+            {experience.description}
+          </p>
           
           <div className="flex flex-wrap gap-2 mt-6">
             {experience.technologies.map((tech, techIndex) => (
@@ -152,13 +130,6 @@ function ExperienceCard({ experience, index }: { experience: Experience; index: 
                 {tech}
               </span>
             ))}
-          </div>
-
-          {/* Expand/Collapse indicator */}
-          <div className="mt-4 text-center">
-            <span className="text-accent text-sm font-medium">
-              {isExpanded ? '▲ Click to collapse' : '▼ Click to expand'}
-            </span>
           </div>
         </div>
 

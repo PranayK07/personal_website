@@ -23,7 +23,7 @@ const projects: Project[] = [
     description:
       'Developed an AI-powered financial assistant using Claude Sonnet 4 via AWS Bedrock with a RAG-based agentic backend for personalized employee benefits guidance. Built a hybrid AWS stack with Lambda, API Gateway, S3, RDS (MySQL), and EC2, implementing secure CRUD operations, prompt engineering, and real-time retrieval optimization.',
     technologies: ['AWS Bedrock', 'Claude Sonnet 4', 'Lambda', 'API Gateway', 'RDS (MySQL)', 'S3', 'EC2', 'TypeScript'],
-    githubUrl: 'https://github.com/PranayK07/FinMate',
+    githubUrl: 'https://github.com/SujayCh07/codelinc10',
   },
 
   {
@@ -35,7 +35,6 @@ const projects: Project[] = [
     technologies: ['React', 'TypeScript', 'Tailwind CSS', 'Recharts', 'react-query', 'Vite', 'MongoDB', 'AWS'],
     githubUrl: 'https://github.com/PranayK07/FlowIQ',
   },
-
 
   {
     title: 'Stationery',
@@ -56,7 +55,7 @@ const projects: Project[] = [
     description:
       'Developed a modular robotics software library with intuitive interfaces and optimized control algorithms. Collaborated with team engineers to translate system requirements into scalable technical solutions and created maintainable documentation for long-term usability.',
     technologies: ['Java', 'WPILib', 'Gradle', 'Git', 'FRC Robotics'],
-    githubUrl: 'https://github.com/PranayK07/BobcatLib',
+    githubUrl: 'https://github.com/BobcatRobotics/BobcatLib',
   },
 
   // Add more projects by copying the format above
