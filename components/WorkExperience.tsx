@@ -52,6 +52,7 @@ const experiences: Experience[] = [
 function ExperienceCard({ experience, index }: { experience: Experience; index: number }) {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const handleMouseMove = (e: MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -66,6 +67,10 @@ function ExperienceCard({ experience, index }: { experience: Experience; index: 
     setMousePosition({ x: 0, y: 0 });
   };
 
+  const handleClick = () => {
+    setIsExpanded(!isExpanded);
+  };
+
   const rotateX = isHovering ? mousePosition.y * 10 : 0;
   const rotateY = isHovering ? mousePosition.x * 10 : 0;
 
@@ -74,7 +79,8 @@ function ExperienceCard({ experience, index }: { experience: Experience; index: 
       onMouseMove={handleMouseMove}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className="relative group perspective-1000"
+      onClick={handleClick}
+      className="relative group perspective-1000 cursor-pointer"
       style={{
         transform: `perspective(1000px) rotateX(${-rotateX}deg) rotateY(${rotateY}deg) ${isHovering ? 'translateZ(20px)' : 'translateZ(0)'}`,
         transition: 'transform 0.1s ease-out',
@@ -103,21 +109,41 @@ function ExperienceCard({ experience, index }: { experience: Experience; index: 
         />
 
         <div className="relative z-10">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4">
-            <div className="text-center sm:text-left">
-              <h3 className="heading-3 mb-2 group-hover:text-accent transition-colors duration-300">
+          {/* Header with title on left and date on right */}
+          <div className="flex items-start justify-between mb-6 gap-4">
+            <div className="flex-1">
+              <h3 className="heading-3 mb-3 group-hover:text-accent transition-colors duration-300 text-left">
                 {experience.title}
               </h3>
-              <p className="text-accent font-medium">
+              <p className="text-accent font-medium text-left">
                 {experience.company} • {experience.location}
               </p>
             </div>
-            <span className="text-muted text-sm mt-2 sm:mt-0 text-center sm:text-right">{experience.date}</span>
+            <span className="text-muted text-sm whitespace-nowrap flex-shrink-0 text-right">{experience.date}</span>
           </div>
-          <p className="text-muted mb-6 leading-relaxed text-center sm:text-left">
-            {experience.description}
-          </p>
-          <div className="flex flex-wrap gap-2">
+          
+          {/* Collapsible content */}
+          <div
+            className="overflow-hidden transition-all duration-500 ease-in-out"
+            style={{
+              maxHeight: isExpanded ? '1000px' : '120px',
+            }}
+          >
+            <p className="text-muted mb-6 leading-relaxed text-left">
+              {experience.description}
+            </p>
+            
+            {isExpanded && (
+              <div className="mt-6 pt-6 border-t border-accent/20 animate-fadeIn">
+                <h4 className="text-accent font-medium mb-3 text-left">Additional Details</h4>
+                <p className="text-muted mb-4 text-left leading-relaxed">
+                  Click to collapse and see less information about this role.
+                </p>
+              </div>
+            )}
+          </div>
+          
+          <div className="flex flex-wrap gap-2 mt-6">
             {experience.technologies.map((tech, techIndex) => (
               <span
                 key={techIndex}
@@ -126,6 +152,13 @@ function ExperienceCard({ experience, index }: { experience: Experience; index: 
                 {tech}
               </span>
             ))}
+          </div>
+
+          {/* Expand/Collapse indicator */}
+          <div className="mt-4 text-center">
+            <span className="text-accent text-sm font-medium">
+              {isExpanded ? '▲ Click to collapse' : '▼ Click to expand'}
+            </span>
           </div>
         </div>
 
