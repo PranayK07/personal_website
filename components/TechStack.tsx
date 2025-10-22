@@ -140,6 +140,8 @@ export default function TechStack() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [ref, isVisible] = useScrollAnimation(0.2);
   const [isPaused, setIsPaused] = useState(false);
+  const [isManualScrolling, setIsManualScrolling] = useState(false);
+  const pauseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const scrollContainer = scrollContainerRef.current;
@@ -147,9 +149,9 @@ export default function TechStack() {
 
     let animationId: number;
     let scrollPosition = 0;
-    const scrollSpeed = 0.7; 
+    const scrollSpeed = 0.55;
     const animate = () => {
-      if (!isPaused) {
+      if (!isPaused && !isManualScrolling) {
         scrollPosition += scrollSpeed;
 
         // Calculate the width of one set of items
@@ -174,10 +176,37 @@ export default function TechStack() {
       clearTimeout(timeoutId);
       cancelAnimationFrame(animationId);
     };
-  }, [isPaused]);
+  }, [isPaused, isManualScrolling]);
 
   const handleCardHover = (hovering: boolean) => {
     setIsPaused(hovering);
+  };
+
+  const handleScroll = (direction: 'left' | 'right') => {
+    const scrollContainer = scrollContainerRef.current;
+    if (!scrollContainer) return;
+
+    // Pause automatic scrolling
+    setIsManualScrolling(true);
+
+    // Clear any existing timeout
+    if (pauseTimeoutRef.current) {
+      clearTimeout(pauseTimeoutRef.current);
+    }
+
+    // Scroll by approximately 2 cards width
+    const scrollAmount = 300;
+    const targetScroll = scrollContainer.scrollLeft + (direction === 'right' ? scrollAmount : -scrollAmount);
+
+    scrollContainer.scrollTo({
+      left: targetScroll,
+      behavior: 'smooth'
+    });
+
+    // Resume automatic scrolling after 3 seconds of inactivity
+    pauseTimeoutRef.current = setTimeout(() => {
+      setIsManualScrolling(false);
+    }, 3000);
   };
 
   return (
@@ -193,6 +222,49 @@ export default function TechStack() {
           </h2>
 
           <div className="relative max-w-5xl mx-auto my-16" style={{ overflow: 'visible' }}>
+            {/* Navigation Arrows */}
+            <button
+              onClick={() => handleScroll('left')}
+              className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-[0_0_20px_rgba(20,184,166,0.4)] group"
+              style={{
+                backgroundColor: 'rgba(20, 184, 166, 0.15)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+                border: '1px solid rgba(20, 184, 166, 0.3)',
+              }}
+              aria-label="Scroll left"
+            >
+              <svg
+                className="w-6 h-6 text-teal-400 group-hover:text-teal-300 transition-colors"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+
+            <button
+              onClick={() => handleScroll('right')}
+              className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-[0_0_20px_rgba(20,184,166,0.4)] group"
+              style={{
+                backgroundColor: 'rgba(20, 184, 166, 0.15)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+                border: '1px solid rgba(20, 184, 166, 0.3)',
+              }}
+              aria-label="Scroll right"
+            >
+              <svg
+                className="w-6 h-6 text-teal-400 group-hover:text-teal-300 transition-colors"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+
             {/* Gradient overlays for smooth fade effect */}
             <div
               className="absolute left-0 top-0 bottom-0 w-32 z-10 pointer-events-none"
