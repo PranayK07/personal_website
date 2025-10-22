@@ -116,7 +116,7 @@ export default function Hero() {
             style={{ transitionDelay: '200ms' }}
           >
             <p className="text-base md:text-lg text-foreground/70 w-full max-w-2xl mb-12 leading-relaxed font-light text-center px-4">
-              Hey, my name is Pranay Kakkar — I am a Computer Science major at the University of Connecticut. I have always been interested in using data and machine learning to solve real-world problems alongside the usual tinkering with robotics! I love contributing to research and have had experience with various labs, researching in various disciplines like crypotgraphy, machine learning, physics, and lasers. Outside of academics, I am big into soccer, astronomy, and creating small side projects to learn new skills. People I have worked with often describe me as calm under pressure and very communicative. I would love to connect with you!
+              Hi, I’m Pranay Kakkar, a Computer Science major at UConn, passionate about applying data and machine learning to real-world problems. I’ve researched cryptography, ML, and physics while also enjoying soccer, astronomy, and side projects that help me learn new skills.
             </p>
           </div>
         )}
