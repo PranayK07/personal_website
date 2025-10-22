@@ -94,7 +94,7 @@ const techStack: Tech[] = [
   },
   {
     name: 'CUDA',
-    logo: 'logos/cuda-svgrepo-com.svg',
+    logo: 'https://www.vectorlogo.zone/logos/nvidia/nvidia-icon.svg',
     color: '#078912ff'
   }
 ];
