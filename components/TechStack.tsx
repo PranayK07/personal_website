@@ -77,6 +77,26 @@ const techStack: Tech[] = [
     logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg',
     color: '#F7DF1E'
   },
+  {
+    name: 'Azure',
+    logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/azure/azure-original.svg',
+    color: '#0089D6'
+  },
+  {
+    name: 'Kotlin',
+    logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/kotlin/kotlin-original.svg',
+    color: '#d500aeff'
+  },
+  {
+    name: 'Docker',
+    logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg',
+    color: '#2496ED'
+  },
+  {
+    name: 'CUDA',
+    logo: 'logos/cuda-svgrepo-com.svg',
+    color: '#078912ff'
+  }
 ];
 
 function TechCard({ tech, onHover }: { tech: Tech; onHover: (hovering: boolean) => void }) {
