@@ -58,27 +58,58 @@ export default function Chat() {
     //   body: JSON.stringify({ message: inputValue, history: messages }),
     // });
     // const data = await response.json();
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [
+            ...messages.map((m) => ({
+              role: m.sender === "user" ? "user" : "assistant",
+              content: m.text,
+            })),
+            { role: "user", content: inputValue },
+          ],
+        }),
+      });
 
-    // Simulate LLM response (replace this with actual LLM integration)
-    setTimeout(() => {
+      // Handle streaming response
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      let llmReply = "";
+
       const llmMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: "I'm a placeholder response. Replace this with your LLM integration!",
-        sender: 'llm',
+        text: "",
+        sender: "llm",
         timestamp: new Date(),
-        isAnimating: true,
+        isAnimating: false,
       };
       setMessages((prev) => [...prev, llmMessage]);
 
-      // Remove animation flag after animation completes
-      setTimeout(() => {
+      while (true) {
+        const { done, value } = await reader!.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        llmReply += chunk;
+
+        // Update live as tokens stream in
         setMessages((prev) =>
           prev.map((msg) =>
-            msg.id === llmMessage.id ? { ...msg, isAnimating: false } : msg
+            msg.id === llmMessage.id ? { ...msg, text: llmReply } : msg
           )
         );
-      }, 300);
-    }, 500);
+      }
+    } catch (err) {
+      console.error("LLM Error:", err);
+      const errorMsg: Message = {
+        id: (Date.now() + 2).toString(),
+        text: "Sorry, something went wrong while fetching my response.",
+        sender: "llm",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorMsg]);
+    }
   };
 
   return (
@@ -135,7 +166,7 @@ export default function Chat() {
             {messages.length === 0 ? (
               <div className="h-full flex items-center justify-center px-6">
                 <p className="text-gray-400 text-center text-sm leading-relaxed">
-                  Start a conversation!
+                  Start a conversation with PranayAI!
                 </p>
               </div>
             ) : (
