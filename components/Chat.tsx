@@ -86,15 +86,15 @@ export default function Chat() {
       {/* Chat Button */}
       <button
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-6 right-6 z-50 transition-all duration-500 ease-out ${
+        className={`fixed bottom-4 right-4 md:bottom-6 md:right-6 z-50 transition-all duration-500 ease-out ${
           isOpen ? 'opacity-0 scale-0 pointer-events-none' : 'opacity-100 scale-100'
         }`}
         aria-label="Open chat"
       >
         <div className="relative group">
           {/* Glassy button with strong backdrop blur and teal tint */}
-          <div className="relative w-16 h-16 rounded-full bg-teal-500/10 backdrop-blur-xl border border-teal-400/40 hover:border-teal-400/60 hover:scale-110 transition-all duration-300 flex items-center justify-center">
-            <MessageCircle className="w-7 h-7 text-teal-400" strokeWidth={2} />
+          <div className="relative w-12 h-12 md:w-16 md:h-16 rounded-full bg-teal-500/10 backdrop-blur-xl border border-teal-400/40 hover:border-teal-400/60 hover:scale-110 transition-all duration-300 flex items-center justify-center">
+            <MessageCircle className="w-5 h-5 md:w-7 md:h-7 text-teal-400" strokeWidth={2} />
           </div>
         </div>
       </button>
@@ -102,16 +102,16 @@ export default function Chat() {
       {/* Chat Box */}
       <div
         ref={chatBoxRef}
-        className={`fixed bottom-6 right-6 z-50 transition-all duration-500 ease-in-out ${
+        className={`fixed z-50 transition-all duration-500 ease-in-out ${
           isOpen
-            ? 'opacity-100 scale-100 w-96 h-[32rem]'
-            : 'opacity-0 scale-0 w-16 h-16 pointer-events-none'
+            ? 'opacity-100 scale-100 inset-0 md:inset-auto md:bottom-6 md:right-6 md:w-96 md:h-[32rem] w-full h-full'
+            : 'opacity-0 scale-0 bottom-4 right-4 md:bottom-6 md:right-6 w-12 h-12 md:w-16 md:h-16 pointer-events-none'
         }`}
         style={{
           transformOrigin: 'bottom right',
         }}
       >
-        <div className="w-full h-full flex flex-col bg-black/80 backdrop-blur-xl border border-teal-400/20 rounded-2xl shadow-2xl shadow-teal-500/20 overflow-hidden">
+        <div className="w-full h-full flex flex-col bg-black/80 backdrop-blur-xl border border-teal-400/20 rounded-none md:rounded-2xl shadow-2xl shadow-teal-500/20 overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-5 border-b border-teal-400/10 bg-black/40">
             <div className="flex items-center gap-3">
