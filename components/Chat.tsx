@@ -102,10 +102,10 @@ export default function Chat() {
       {/* Chat Box */}
       <div
         ref={chatBoxRef}
-        className={`fixed bottom-6 right-6 z-50 transition-all duration-700 ease-in-out ${
+        className={`fixed bottom-6 right-6 z-50 transition-all duration-500 ease-in-out ${
           isOpen
-            ? 'opacity-100 w-96 h-[32rem]'
-            : 'opacity-0 w-16 h-16 pointer-events-none'
+            ? 'opacity-100 scale-100 w-96 h-[32rem]'
+            : 'opacity-0 scale-0 w-16 h-16 pointer-events-none'
         }`}
         style={{
           transformOrigin: 'bottom right',
@@ -115,8 +115,8 @@ export default function Chat() {
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-5 border-b border-teal-400/10 bg-black/40">
             <div className="flex items-center gap-3">
-              {/* Placeholder profile image */}
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white font-semibold text-sm">
+              {/* Placeholder profile image - 10% smaller */}
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white font-semibold text-xs">
                 PK
               </div>
               <h3 className="text-base font-semibold text-white">Pranay Kakkar</h3>
@@ -130,11 +130,11 @@ export default function Chat() {
             </button>
           </div>
 
-          {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto px-8 py-8 space-y-6">
+          {/* Messages Area - increased padding all around */}
+          <div className="flex-1 overflow-y-auto px-8 py-6 space-y-8">
             {messages.length === 0 ? (
               <div className="h-full flex items-center justify-center px-6">
-                <p className="text-gray-400 text-center text-sm">
+                <p className="text-gray-400 text-center text-sm leading-relaxed">
                   Start a conversation!
                 </p>
               </div>
@@ -147,13 +147,16 @@ export default function Chat() {
                   } ${message.isAnimating ? 'animate-messageSlideIn' : ''}`}
                 >
                   <div
-                    className={`max-w-[70%] px-8 py-5 shadow-md ${
+                    className={`max-w-[65%] shadow-md ${
                       message.sender === 'user'
                         ? 'bg-teal-500 text-white rounded-[24px] rounded-br-md'
                         : 'bg-gray-900/90 text-white rounded-[24px] rounded-bl-md'
                     }`}
+                    style={{
+                      padding: '16px 20px',
+                    }}
                   >
-                    <p className="text-sm whitespace-pre-wrap break-words leading-7">
+                    <p className="text-sm whitespace-pre-wrap break-words" style={{ lineHeight: '1.6' }}>
                       {message.text}
                     </p>
                   </div>
@@ -174,7 +177,7 @@ export default function Chat() {
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 placeholder="Ask me about my experiences..."
-                className="flex-1 px-5 py-3 text-sm bg-transparent text-white placeholder-gray-500 focus:outline-none transition-all"
+                className="flex-1 px-6 py-4 text-sm bg-transparent text-white placeholder-gray-500 focus:outline-none transition-all"
               />
               <button
                 type="submit"
