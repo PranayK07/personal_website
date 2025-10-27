@@ -8,6 +8,7 @@ interface Message {
   text: string;
   sender: 'user' | 'llm';
   timestamp: Date;
+  isAnimating?: boolean;
 }
 
 export default function Chat() {
@@ -35,10 +36,20 @@ export default function Chat() {
       text: inputValue,
       sender: 'user',
       timestamp: new Date(),
+      isAnimating: true,
     };
 
     setMessages((prev) => [...prev, userMessage]);
     setInputValue('');
+
+    // Remove animation flag after animation completes
+    setTimeout(() => {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === userMessage.id ? { ...msg, isAnimating: false } : msg
+        )
+      );
+    }, 300);
 
     // TODO: Integrate with LLM here
     // Example integration point:
@@ -55,8 +66,18 @@ export default function Chat() {
         text: "I'm a placeholder response. Replace this with your LLM integration!",
         sender: 'llm',
         timestamp: new Date(),
+        isAnimating: true,
       };
       setMessages((prev) => [...prev, llmMessage]);
+
+      // Remove animation flag after animation completes
+      setTimeout(() => {
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === llmMessage.id ? { ...msg, isAnimating: false } : msg
+          )
+        );
+      }, 300);
     }, 500);
   };
 
@@ -71,12 +92,9 @@ export default function Chat() {
         aria-label="Open chat"
       >
         <div className="relative group">
-          {/* Glassy button with backdrop blur and teal tint */}
-          <div className="relative w-16 h-16 rounded-full bg-teal-500/20 backdrop-blur-md border border-teal-400/30 shadow-lg shadow-teal-500/20 hover:shadow-teal-500/40 hover:scale-110 transition-all duration-300 flex items-center justify-center">
+          {/* Glassy button with strong backdrop blur and teal tint */}
+          <div className="relative w-16 h-16 rounded-full bg-teal-500/10 backdrop-blur-xl border border-teal-400/40 hover:border-teal-400/60 hover:scale-110 transition-all duration-300 flex items-center justify-center">
             <MessageCircle className="w-7 h-7 text-teal-400" strokeWidth={2} />
-
-            {/* Glowing effect on hover */}
-            <div className="absolute inset-0 rounded-full bg-teal-400/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           </div>
         </div>
       </button>
@@ -93,11 +111,11 @@ export default function Chat() {
           transformOrigin: 'bottom right',
         }}
       >
-        <div className="w-full h-full flex flex-col bg-black/80 backdrop-blur-xl border border-teal-400/30 rounded-2xl shadow-2xl shadow-teal-500/20 overflow-hidden">
+        <div className="w-full h-full flex flex-col bg-black/80 backdrop-blur-xl border border-teal-400/20 rounded-2xl shadow-2xl shadow-teal-500/20 overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-5 border-b border-teal-400/20 bg-black/40">
+          <div className="flex items-center justify-between px-6 py-5 border-b border-teal-400/10 bg-black/40">
             <div className="flex items-center gap-3">
-              {/* Placeholder profile image - 10% smaller */}
+              {/* Placeholder profile image */}
               <div className="w-9 h-9 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white font-semibold text-sm">
                 PK
               </div>
@@ -113,7 +131,7 @@ export default function Chat() {
           </div>
 
           {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
+          <div className="flex-1 overflow-y-auto px-8 py-8 space-y-6">
             {messages.length === 0 ? (
               <div className="h-full flex items-center justify-center px-6">
                 <p className="text-gray-400 text-center text-sm">
@@ -126,16 +144,16 @@ export default function Chat() {
                   key={message.id}
                   className={`flex ${
                     message.sender === 'user' ? 'justify-end' : 'justify-start'
-                  }`}
+                  } ${message.isAnimating ? 'animate-messageSlideIn' : ''}`}
                 >
                   <div
-                    className={`max-w-[65%] px-5 py-3 rounded-2xl ${
+                    className={`max-w-[70%] px-8 py-5 shadow-md ${
                       message.sender === 'user'
-                        ? 'bg-teal-500 text-white rounded-br-md'
-                        : 'bg-gray-900 text-white border border-gray-800 rounded-bl-md'
+                        ? 'bg-teal-500 text-white rounded-[24px] rounded-br-md'
+                        : 'bg-gray-900/90 text-white rounded-[24px] rounded-bl-md'
                     }`}
                   >
-                    <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
+                    <p className="text-sm whitespace-pre-wrap break-words leading-7">
                       {message.text}
                     </p>
                   </div>
@@ -148,19 +166,19 @@ export default function Chat() {
           {/* Input Area */}
           <form
             onSubmit={handleSendMessage}
-            className="px-5 py-5 border-t border-teal-400/20 bg-black/40"
+            className="px-6 py-6 border-t border-teal-400/10 bg-black/40"
           >
-            <div className="flex gap-3">
+            <div className="flex gap-3 items-center">
               <input
                 type="text"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Type a message..."
-                className="flex-1 px-5 py-3 text-sm bg-gray-900/50 border border-teal-400/20 rounded-full text-white placeholder-gray-500 focus:outline-none focus:border-teal-400/50 focus:ring-1 focus:ring-teal-400/50 transition-all"
+                placeholder="Ask me about my experiences..."
+                className="flex-1 px-5 py-3 text-sm bg-transparent text-white placeholder-gray-500 focus:outline-none transition-all"
               />
               <button
                 type="submit"
-                className="w-11 h-11 rounded-full bg-teal-500 hover:bg-teal-600 transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                className="w-11 h-11 rounded-full bg-teal-500 hover:bg-teal-600 transition-all hover:scale-105 active:scale-95 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex-shrink-0 shadow-lg shadow-teal-500/30"
                 disabled={!inputValue.trim()}
                 aria-label="Send message"
               >

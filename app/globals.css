@@ -298,6 +298,22 @@ html {
   animation: gradient 8s ease infinite;
 }
 
+/* Message slide-in animation for chat */
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-messageSlideIn {
+  animation: messageSlideIn 0.3s ease-out;
+}
+
 /* Floating animation for particles */
 @keyframes float {
   0%, 100% {
