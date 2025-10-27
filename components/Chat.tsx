@@ -131,7 +131,7 @@ export default function Chat() {
           </div>
 
           {/* Messages Area - increased padding all around */}
-          <div className="flex-1 overflow-y-auto px-8 py-6 space-y-5">
+          <div className="flex-1 overflow-y-auto px-8 py-6 space-y-6">
             {messages.length === 0 ? (
               <div className="h-full flex items-center justify-center px-6">
                 <p className="text-gray-400 text-center text-sm leading-relaxed">
@@ -147,13 +147,16 @@ export default function Chat() {
                   } ${message.isAnimating ? 'animate-messageSlideIn' : ''}`}
                 >
                   <div
-                    className={`max-w-[65%] px-10 py-6 shadow-md ${
+                    className={`max-w-[65%] shadow-md ${
                       message.sender === 'user'
                         ? 'bg-teal-500 text-white rounded-[24px] rounded-br-md'
                         : 'bg-gray-900/90 text-white rounded-[24px] rounded-bl-md'
                     }`}
+                    style={{
+                      padding: '16px 20px',
+                    }}
                   >
-                    <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
+                    <p className="text-sm whitespace-pre-wrap break-words" style={{ lineHeight: '1.6' }}>
                       {message.text}
                     </p>
                   </div>
