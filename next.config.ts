@@ -1,12 +1,6 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  output: 'export',
-  images: {
-    unoptimized: true,
-  },
-  basePath: '/personal_website',
-  trailingSlash: true,
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  output: 'standalone', // helps Vercel package it efficiently
 };
 
 export default nextConfig;
