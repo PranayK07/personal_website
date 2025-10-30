@@ -51,18 +51,20 @@ export default function Chat() {
       );
     }, 300);
 
-    // TODO: Integrate with LLM here
-    // Example integration point:
-    // const response = await fetch('/api/chat', {
-    //   method: 'POST',
-    //   body: JSON.stringify({ message: inputValue, history: messages }),
-    // });
-    // const data = await response.json();
     try {
-      const res = await fetch('/api/chat', {
+      // Convert messages to API format and include the new user message
+      const apiMessages = [
+        ...messages.map((m) => ({
+          role: m.sender === 'user' ? 'user' : 'assistant',
+          content: m.text,
+        })),
+        { role: 'user', content: inputValue },
+      ];
+
+      const res = await fetch('/api/chat/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages }),
+        body: JSON.stringify({ messages: apiMessages }),
       });
       
       // Handle streaming response
