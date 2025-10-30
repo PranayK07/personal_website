@@ -59,20 +59,12 @@ export default function Chat() {
     // });
     // const data = await response.json();
     try {
-      const res = await fetch("/personal_website/api/chat/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [
-            ...messages.map((m) => ({
-              role: m.sender === "user" ? "user" : "assistant",
-              content: m.text,
-            })),
-            { role: "user", content: inputValue },
-          ],
-        }),
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages }),
       });
-
+      
       // Handle streaming response
       const reader = res.body?.getReader();
       const decoder = new TextDecoder();
