@@ -24,7 +24,8 @@ export default function FluidNavBar() {
       const heroSection = document.getElementById('home');
       if (heroSection) {
         const heroBottom = heroSection.offsetTop + heroSection.offsetHeight;
-        const shouldBeVisible = window.scrollY > heroBottom - window.innerHeight;
+        // Show nav bar when user scrolls past 80% of the hero section
+        const shouldBeVisible = window.scrollY > heroBottom * 0.8;
         setIsVisible(shouldBeVisible);
       }
     };
@@ -53,7 +54,9 @@ export default function FluidNavBar() {
         isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-full'
       }`}
       style={{
-        pointerEvents: isVisible ? 'auto' : 'none'
+        pointerEvents: isVisible ? 'auto' : 'none',
+        width: '100%',
+        height: '96px'
       }}
     >
       <FluidGlass navItems={navItems} />
