@@ -210,7 +210,7 @@ export default function TechStack() {
   };
 
   return (
-    <section id="stack" className="section py-32" style={{ overflow: 'visible' }}>
+    <section id="stack" className="section py-32" style={{ overflow: 'visible', scrollMarginTop: 'var(--pillnav-safe-top, 192px)' }}>
       <div className="container" style={{ overflow: 'visible' }}>
         <div
           ref={ref as RefObject<HTMLDivElement>}

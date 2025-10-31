@@ -1,7 +1,56 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, ReactNode } from 'react';
 import { MessageCircle, X, Send } from 'lucide-react';
+
+// Helper function to convert markdown links to clickable HTML
+function renderMarkdownLinks(text: string): ReactNode {
+  // Match markdown links [text](url)
+  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  const parts: ReactNode[] = [];
+  let lastIndex = 0;
+  let match;
+  let keyIndex = 0;
+
+  while ((match = linkRegex.exec(text)) !== null) {
+    // Add text before the link
+    if (match.index > lastIndex) {
+      parts.push(
+        <span key={`text-${keyIndex++}`}>
+          {text.substring(lastIndex, match.index)}
+        </span>
+      );
+    }
+
+    // Add the link
+    const linkText = match[1];
+    const url = match[2];
+    parts.push(
+      <a
+        key={`link-${keyIndex++}`}
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-indigo-300 hover:text-indigo-200 underline transition-colors"
+      >
+        {linkText}
+      </a>
+    );
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(
+      <span key={`text-${keyIndex++}`}>
+        {text.substring(lastIndex)}
+      </span>
+    );
+  }
+
+  return parts.length > 0 ? <>{parts}</> : <>{text}</>;
+}
 
 interface Message {
   id: string;
@@ -199,15 +248,13 @@ export default function Chat({ isOpen: externalIsOpen, setIsOpen: externalSetIsO
               </div>
               <h3 className="text-base font-semibold text-white">Pranay Kakkar</h3>
             </div>
-            {!fullPage && (
-              <button
-                onClick={() => setIsOpen(false)}
-                className="w-8 h-8 rounded-full bg-indigo-500/20 hover:bg-indigo-500/30 transition-colors flex items-center justify-center group"
-                aria-label="Close chat"
-              >
-                <X className="w-5 h-5 text-indigo-400 group-hover:text-indigo-300" />
-              </button>
-            )}
+            <button
+              onClick={() => setIsOpen(false)}
+              className="w-8 h-8 rounded-full bg-indigo-500/20 hover:bg-indigo-500/30 transition-colors flex items-center justify-center group"
+              aria-label="Close chat"
+            >
+              <X className="w-5 h-5 text-indigo-400 group-hover:text-indigo-300" />
+            </button>
           </div>
 
           {/* Messages Area - increased padding all around */}
@@ -237,7 +284,7 @@ export default function Chat({ isOpen: externalIsOpen, setIsOpen: externalSetIsO
                     }}
                   >
                     <p className="text-sm whitespace-pre-wrap break-words" style={{ lineHeight: '1.6' }}>
-                      {message.text}
+                      {renderMarkdownLinks(message.text)}
                     </p>
                   </div>
                 </div>

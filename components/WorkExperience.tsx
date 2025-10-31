@@ -144,7 +144,7 @@ export default function WorkExperience() {
   const [ref, isVisible] = useScrollAnimation(0.2);
 
   return (
-    <section id="experience" className="section">
+    <section id="work" className="section" style={{ scrollMarginTop: 'var(--pillnav-safe-top, 192px)' }}>
       <div className="container text-center">
         <div
           ref={ref as RefObject<HTMLDivElement>}

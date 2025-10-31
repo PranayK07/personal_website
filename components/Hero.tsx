@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-
-import { Send } from 'lucide-react';
+// Chat is rendered outside Hero to keep initial view fully centered
 
 export default function Hero() {
   const [typedName, setTypedName] = useState('');
@@ -13,6 +12,7 @@ export default function Hero() {
   const [roleComplete, setRoleComplete] = useState(false);
   const [showDescription, setShowDescription] = useState(false);
   const [mounted, setMounted] = useState(false);
+  // Chat should be present at all times; no scroll-triggered mount
 
   const fullName = 'Pranay Kakkar';
   const fullRole = 'CS @ UConn';
@@ -68,8 +68,19 @@ export default function Hero() {
     };
   }, []);
 
+  // Removed scroll-triggered chat visibility to avoid layout jumps
+
   return (
-    <section id="home" className="min-h-screen flex items-center justify-center relative px-4">
+    <section
+      id="home"
+      className={`flex items-center justify-center relative px-4`}
+      style={{
+        // Center hero under the fixed nav; hide chat initially by placing it outside Hero
+        paddingTop: 'var(--pillnav-safe-top, 192px)',
+        minHeight: 'calc(100vh - var(--pillnav-safe-top, 192px))',
+        scrollMarginTop: 'var(--pillnav-safe-top, 192px)'
+      }}
+    >
       <div className="w-full max-w-4xl mx-auto text-center relative z-10">
         {/* Name with typing animation */}
         <div className="mb-6 min-h-[5rem] md:min-h-[6rem] lg:min-h-[7rem] flex items-center justify-center">
@@ -118,65 +129,14 @@ export default function Hero() {
             style={{ transitionDelay: '200ms' }}
           >
             <p className="text-base md:text-lg text-foreground/70 w-full max-w-2xl mb-12 leading-relaxed font-light text-center px-4">
-              Hi, I’m Pranay Kakkar, a Computer Science major at UConn, passionate about applying data and machine learning to real-world problems. I’ve researched cryptography, ML, and physics while also enjoying soccer, astronomy, and side projects that help me learn new skills.
+              Hi, I'm Pranay Kakkar, a Computer Science major at UConn, passionate about applying data and machine learning to real-world problems. I've researched cryptography, ML, and physics while also enjoying soccer, astronomy, and side projects that help me learn new skills.
             </p>
           </div>
         )}
 
-        {/* Chat Prompt Box */}
-        {roleComplete && (
-          <div
-            className={`transform transition-all duration-1000 ease-out flex justify-center ${
-              showDescription
-                ? 'translate-y-0 opacity-100 scale-100'
-                : 'translate-y-8 opacity-0 scale-95'
-            }`}
-            style={{ transitionDelay: '400ms' }}
-          >
-            <ChatPromptBox />
-          </div>
-        )}
+  {/* Chat removed from Hero for initial centered layout */}
 
       </div>
     </section>
-  );
-}
-
-function ChatPromptBox() {
-  const [promptValue, setPromptValue] = useState('');
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (promptValue.trim()) {
-      // Navigate to chat page with the prompt
-      window.location.href = `/chat?message=${encodeURIComponent(promptValue.trim())}`;
-    }
-  };
-
-  return (
-    <div className="w-full max-w-2xl px-4">
-      <div className="bg-card-bg border border-card-border rounded-2xl p-6 md:p-8 backdrop-blur-sm">
-        <p className="text-foreground/80 text-center text-base md:text-lg mb-6 leading-relaxed">
-          Too lazy to read? Chat to my assistant instead and find out exactly what you need!
-        </p>
-        <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
-          <input
-            type="text"
-            value={promptValue}
-            onChange={(e) => setPromptValue(e.target.value)}
-            placeholder="Ask me anything about my experience..."
-            className="flex-1 px-5 py-4 text-sm bg-section-bg rounded-full text-foreground placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-accent/50 transition-all border border-card-border"
-          />
-          <button
-            type="submit"
-            className="px-8 py-4 rounded-full bg-accent hover:bg-accent-hover transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg shadow-accent/30 text-white font-medium"
-            disabled={!promptValue.trim()}
-          >
-            <span className="text-sm">Send</span>
-            <Send className="w-4 h-4" />
-          </button>
-        </form>
-      </div>
-    </div>
   );
 }

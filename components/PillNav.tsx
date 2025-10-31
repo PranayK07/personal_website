@@ -46,6 +46,7 @@ const PillNav: React.FC<PillNavProps> = ({
   const hamburgerRef = useRef<HTMLButtonElement | null>(null);
   const mobileMenuRef = useRef<HTMLDivElement | null>(null);
   const navItemsRef = useRef<HTMLDivElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const layout = () => {
@@ -126,6 +127,34 @@ const PillNav: React.FC<PillNavProps> = ({
 
     return () => window.removeEventListener('resize', onResize);
   }, [items, ease, initialLoadAnimation]);
+
+  // Publish a CSS variable with the nav's safe top offset to avoid overlaps
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const compute = () => {
+      const rect = el.getBoundingClientRect();
+      const cs = getComputedStyle(el);
+      const topPx = parseFloat(cs.top) || 0; // e.g., 1em -> px
+      const extraGap = 16; // extra breathing room
+      const safe = Math.ceil(rect.height + topPx + extraGap);
+      document.documentElement.style.setProperty('--pillnav-safe-top', `${safe}px`);
+    };
+
+    compute();
+    const ro = new ResizeObserver(() => compute());
+    ro.observe(el);
+    const onResize = () => compute();
+    window.addEventListener('resize', onResize);
+    if ((document as any).fonts?.ready) {
+      (document as any).fonts.ready.then(compute).catch(() => {});
+    }
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', onResize);
+    };
+  }, [items]);
 
   const handleEnter = (i: number) => {
     const tl = tlRefs.current[i];
@@ -218,7 +247,7 @@ const PillNav: React.FC<PillNavProps> = ({
   } as React.CSSProperties;
 
   return (
-    <div className={`pill-nav-container ${hideOnMobile ? 'hidden md:block' : ''}`}>
+    <div className={`pill-nav-container ${hideOnMobile ? 'hidden md:block' : ''}`} ref={containerRef}>
       <nav className={`pill-nav ${className}`} aria-label="Primary" style={cssVars}>
         <div className="pill-nav-items desktop-only" ref={navItemsRef}>
           <ul className="pill-list" role="menubar">

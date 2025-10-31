@@ -8,7 +8,7 @@ export default function Contact() {
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
 
   return (
-    <section id="contact" className="section py-20">
+    <section id="contact" className="section py-20" style={{ scrollMarginTop: 'var(--pillnav-safe-top, 192px)' }}>
       <div className="container text-center">
         <div
           ref={ref as RefObject<HTMLDivElement>}

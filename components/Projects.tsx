@@ -189,7 +189,7 @@ export default function Projects() {
   const [ref, isVisible] = useScrollAnimation(0.2);
 
   return (
-    <section id="projects" className="section">
+    <section id="projects" className="section" style={{ scrollMarginTop: 'var(--pillnav-safe-top, 192px)' }}>
       <div className="container text-center">
         <div
           ref={ref as RefObject<HTMLDivElement>}

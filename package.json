@@ -8,9 +8,11 @@
     "start": "next start"
   },
   "dependencies": {
+    "@paper-design/shaders-react": "^0.0.61",
     "@react-three/drei": "^10.7.6",
     "@react-three/fiber": "^9.4.0",
     "@vercel/analytics": "^1.5.0",
+    "framer-motion": "^12.23.24",
     "gsap": "^3.13.0",
     "lucide-react": "^0.548.0",
     "maath": "^0.10.8",

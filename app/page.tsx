@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import Hero from '@/components/Hero';
 import WorkExperience from '@/components/WorkExperience';
 import TechStack from '@/components/TechStack';
@@ -9,12 +8,10 @@ import Contact from '@/components/Contact';
 import Footer from '@/components/Footer';
 import DotGrid from '@/components/DotGrid';
 import CustomCursor from '@/components/CustomCursor';
-import Chat from '@/components/Chat';
 import PillNav from '@/components/PillNav';
+import AIChat from '@/components/AIChat';
 
 export default function Home() {
-  const [isChatOpen, setIsChatOpen] = useState(false);
-
   return (
     <>
       <div className="fixed top-0 left-0 w-full h-full -z-10" style={{ opacity: 0.7 }}>
@@ -33,7 +30,7 @@ export default function Home() {
       <CustomCursor />
       <PillNav
         items={[
-          { label: 'Home', href: '/' },
+          { label: 'Home', href: '#home' },
           { label: 'Work', href: '#work' },
           { label: 'Stack', href: '#stack' },
           { label: 'Projects', href: '#projects' },
@@ -44,17 +41,23 @@ export default function Home() {
         pillColor="#1a1a24"
         hoveredPillTextColor="#6366f1"
         pillTextColor="#94a3b8"
-        hideOnMobile={isChatOpen}
+        hideOnMobile={false}
       />
       <main>
         <Hero />
+        {/* Dedicated Chat section below the fold; always mounted */}
+        <section id="chat" style={{
+          paddingTop: 'var(--pillnav-safe-top, 192px)',
+          scrollMarginTop: 'var(--pillnav-safe-top, 192px)'
+        }} className="px-4 flex justify-center">
+          <AIChat />
+        </section>
         <WorkExperience />
         <TechStack />
         <Projects />
         <Contact />
       </main>
       <Footer />
-      <Chat isOpen={isChatOpen} setIsOpen={setIsChatOpen} />
     </>
   );
 }

@@ -10,14 +10,11 @@ import { ArrowLeft } from 'lucide-react';
 function ChatPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [initialMessage, setInitialMessage] = useState<string | null>(null);
+  const initialMessage = searchParams.get('message');
 
-  useEffect(() => {
-    const message = searchParams.get('message');
-    if (message) {
-      setInitialMessage(message);
-    }
-  }, [searchParams]);
+  const handleClose = () => {
+    router.push('/');
+  };
 
   return (
     <>
@@ -35,19 +32,24 @@ function ChatPageContent() {
         />
       </div>
       <CustomCursor />
-      
-      {/* Back to Home Button */}
+
+      {/* Back button */}
       <button
-        onClick={() => router.push('/')}
-        className="fixed top-4 left-4 md:top-6 md:left-6 z-[60] flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/10 backdrop-blur-xl border border-indigo-400/40 hover:border-indigo-400/60 hover:scale-105 transition-all duration-300 text-indigo-400 hover:text-indigo-300"
-        aria-label="Back to home"
+        onClick={handleClose}
+        className="fixed top-6 left-6 z-50 flex items-center gap-2 px-4 py-2 rounded-full bg-black/20 backdrop-blur-xl border border-white/10 hover:border-indigo-400/40 transition-all text-white/60 hover:text-white"
+        aria-label="Go back home"
       >
         <ArrowLeft className="w-4 h-4" />
-        <span className="text-sm font-medium">Home</span>
+        <span className="text-sm">Back</span>
       </button>
 
-      {/* Full page chat */}
-      <Chat isOpen={true} setIsOpen={() => {}} initialMessage={initialMessage} fullPage={true} />
+      {/* Full page Chat with initial message */}
+      <Chat
+        isOpen={true}
+        setIsOpen={handleClose}
+        initialMessage={initialMessage}
+        fullPage={true}
+      />
     </>
   );
 }
