@@ -14,9 +14,11 @@ interface Message {
 interface ChatProps {
   isOpen?: boolean;
   setIsOpen?: (isOpen: boolean) => void;
+  initialMessage?: string | null;
+  fullPage?: boolean;
 }
 
-export default function Chat({ isOpen: externalIsOpen, setIsOpen: externalSetIsOpen }: ChatProps = {}) {
+export default function Chat({ isOpen: externalIsOpen, setIsOpen: externalSetIsOpen, initialMessage, fullPage = false }: ChatProps = {}) {
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
   const setIsOpen = externalSetIsOpen || setInternalIsOpen;
@@ -24,6 +26,7 @@ export default function Chat({ isOpen: externalIsOpen, setIsOpen: externalSetIsO
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatBoxRef = useRef<HTMLDivElement>(null);
+  const [hasProcessedInitial, setHasProcessedInitial] = useState(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -33,14 +36,29 @@ export default function Chat({ isOpen: externalIsOpen, setIsOpen: externalSetIsO
     scrollToBottom();
   }, [messages]);
 
+  // Handle initial message
+  useEffect(() => {
+    if (initialMessage && !hasProcessedInitial && isOpen) {
+      setInputValue(initialMessage);
+      setHasProcessedInitial(true);
+      // Auto-send the initial message after a brief delay
+      setTimeout(() => {
+        const form = chatBoxRef.current?.querySelector('form');
+        if (form) {
+          form.requestSubmit();
+        }
+      }, 500);
+    }
+  }, [initialMessage, hasProcessedInitial, isOpen]);
+
   // Lock body scroll when chat is open on mobile
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !fullPage) {
       document.body.style.overflow = 'hidden';
       document.body.style.position = 'fixed';
       document.body.style.width = '100%';
       document.body.style.height = '100%';
-    } else {
+    } else if (!fullPage) {
       document.body.style.overflow = '';
       document.body.style.position = '';
       document.body.style.width = '';
@@ -48,12 +66,14 @@ export default function Chat({ isOpen: externalIsOpen, setIsOpen: externalSetIsO
     }
 
     return () => {
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.width = '';
-      document.body.style.height = '';
+      if (!fullPage) {
+        document.body.style.overflow = '';
+        document.body.style.position = '';
+        document.body.style.width = '';
+        document.body.style.height = '';
+      }
     };
-  }, [isOpen]);
+  }, [isOpen, fullPage]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,35 +157,39 @@ export default function Chat({ isOpen: externalIsOpen, setIsOpen: externalSetIsO
 
   return (
     <>
-      {/* Chat Button */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className={`fixed bottom-4 right-4 md:bottom-6 md:right-6 z-50 transition-all duration-500 ease-out ${
-          isOpen ? 'opacity-0 scale-0 pointer-events-none' : 'opacity-100 scale-100'
-        }`}
-        aria-label="Open chat"
-      >
-        <div className="relative group">
-          {/* Glassy button with strong backdrop blur and indigo tint */}
-          <div className="relative w-12 h-12 md:w-16 md:h-16 rounded-full bg-indigo-500/10 backdrop-blur-xl border border-indigo-400/40 hover:border-indigo-400/60 hover:scale-110 transition-all duration-300 flex items-center justify-center">
-            <MessageCircle className="w-5 h-5 md:w-7 md:h-7 text-indigo-400" strokeWidth={2} />
+      {/* Chat Button - hide in full page mode */}
+      {!fullPage && (
+        <button
+          onClick={() => setIsOpen(true)}
+          className={`fixed bottom-4 right-4 md:bottom-6 md:right-6 z-50 transition-all duration-500 ease-out ${
+            isOpen ? 'opacity-0 scale-0 pointer-events-none' : 'opacity-100 scale-100'
+          }`}
+          aria-label="Open chat"
+        >
+          <div className="relative group">
+            {/* Glassy button with strong backdrop blur and indigo tint */}
+            <div className="relative w-12 h-12 md:w-16 md:h-16 rounded-full bg-indigo-500/10 backdrop-blur-xl border border-indigo-400/40 hover:border-indigo-400/60 hover:scale-110 transition-all duration-300 flex items-center justify-center">
+              <MessageCircle className="w-5 h-5 md:w-7 md:h-7 text-indigo-400" strokeWidth={2} />
+            </div>
           </div>
-        </div>
-      </button>
+        </button>
+      )}
 
       {/* Chat Box */}
       <div
         ref={chatBoxRef}
         className={`fixed z-50 transition-all duration-500 ease-in-out ${
-          isOpen
+          fullPage
+            ? 'opacity-100 scale-100 inset-0 w-full h-[100dvh]'
+            : isOpen
             ? 'opacity-100 scale-100 inset-0 md:inset-auto md:bottom-6 md:right-6 md:w-96 md:h-[32rem] w-full h-[100dvh]'
             : 'opacity-0 scale-0 bottom-4 right-4 md:bottom-6 md:right-6 w-12 h-12 md:w-16 md:h-16 pointer-events-none'
         }`}
         style={{
-          transformOrigin: 'bottom right',
+          transformOrigin: fullPage ? 'center' : 'bottom right',
         }}
       >
-        <div className="w-full h-full flex flex-col bg-black/80 backdrop-blur-xl border border-indigo-400/20 rounded-none md:rounded-2xl shadow-2xl shadow-indigo-500/20">
+        <div className={`w-full h-full flex flex-col bg-black/80 backdrop-blur-xl border border-indigo-400/20 shadow-2xl shadow-indigo-500/20 ${fullPage ? 'rounded-none' : 'rounded-none md:rounded-2xl'}`}>
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-5 border-b border-indigo-400/10 bg-black/40">
             <div className="flex items-center gap-3">
@@ -175,13 +199,15 @@ export default function Chat({ isOpen: externalIsOpen, setIsOpen: externalSetIsO
               </div>
               <h3 className="text-base font-semibold text-white">Pranay Kakkar</h3>
             </div>
-            <button
-              onClick={() => setIsOpen(false)}
-              className="w-8 h-8 rounded-full bg-indigo-500/20 hover:bg-indigo-500/30 transition-colors flex items-center justify-center group"
-              aria-label="Close chat"
-            >
-              <X className="w-5 h-5 text-indigo-400 group-hover:text-indigo-300" />
-            </button>
+            {!fullPage && (
+              <button
+                onClick={() => setIsOpen(false)}
+                className="w-8 h-8 rounded-full bg-indigo-500/20 hover:bg-indigo-500/30 transition-colors flex items-center justify-center group"
+                aria-label="Close chat"
+              >
+                <X className="w-5 h-5 text-indigo-400 group-hover:text-indigo-300" />
+              </button>
+            )}
           </div>
 
           {/* Messages Area - increased padding all around */}
