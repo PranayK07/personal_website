@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Chat from '@/components/Chat';
 import DotGrid from '@/components/DotGrid';
 import CustomCursor from '@/components/CustomCursor';
 import { ArrowLeft } from 'lucide-react';
 
-export default function ChatPage() {
+function ChatPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [initialMessage, setInitialMessage] = useState<string | null>(null);
@@ -49,5 +49,13 @@ export default function ChatPage() {
       {/* Full page chat */}
       <Chat isOpen={true} setIsOpen={() => {}} initialMessage={initialMessage} fullPage={true} />
     </>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><p className="text-white">Loading...</p></div>}>
+      <ChatPageContent />
+    </Suspense>
   );
 }
