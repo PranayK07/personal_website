@@ -43,7 +43,6 @@ body {
   overflow-x: hidden;
   line-height: 1.6;
   font-weight: 400;
-  padding-bottom: 6rem; /* Add padding for FluidNavBar */
   /* Hide scrollbar for Chrome, Safari and Opera */
   scrollbar-width: none;  /* Firefox */
   -ms-overflow-style: none;  /* IE and Edge */

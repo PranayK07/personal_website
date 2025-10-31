@@ -1,3 +1,6 @@
+'use client';
+
+import { useState } from 'react';
 import Hero from '@/components/Hero';
 import WorkExperience from '@/components/WorkExperience';
 import TechStack from '@/components/TechStack';
@@ -7,9 +10,11 @@ import Footer from '@/components/Footer';
 import DotGrid from '@/components/DotGrid';
 import CustomCursor from '@/components/CustomCursor';
 import Chat from '@/components/Chat';
-import FluidNavBar from '@/components/FluidNavBar';
+import PillNav from '@/components/PillNav';
 
 export default function Home() {
+  const [isChatOpen, setIsChatOpen] = useState(false);
+
   return (
     <>
       <div className="fixed top-0 left-0 w-full h-full -z-10" style={{ opacity: 0.7 }}>
@@ -26,7 +31,21 @@ export default function Home() {
         />
       </div>
       <CustomCursor />
-      <FluidNavBar />
+      <PillNav
+        items={[
+          { label: 'Home', href: '/' },
+          { label: 'Work', href: '#work' },
+          { label: 'Stack', href: '#stack' },
+          { label: 'Projects', href: '#projects' },
+          { label: 'Contact', href: '#contact' }
+        ]}
+        activeHref="/"
+        baseColor="#111118"
+        pillColor="#1a1a24"
+        hoveredPillTextColor="#6366f1"
+        pillTextColor="#94a3b8"
+        hideOnMobile={isChatOpen}
+      />
       <main>
         <Hero />
         <WorkExperience />
@@ -35,7 +54,7 @@ export default function Home() {
         <Contact />
       </main>
       <Footer />
-      <Chat />
+      <Chat isOpen={isChatOpen} setIsOpen={setIsChatOpen} />
     </>
   );
 }

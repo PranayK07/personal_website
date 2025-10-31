@@ -11,8 +11,15 @@ interface Message {
   isAnimating?: boolean;
 }
 
-export default function Chat() {
-  const [isOpen, setIsOpen] = useState(false);
+interface ChatProps {
+  isOpen?: boolean;
+  setIsOpen?: (isOpen: boolean) => void;
+}
+
+export default function Chat({ isOpen: externalIsOpen, setIsOpen: externalSetIsOpen }: ChatProps = {}) {
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
+  const setIsOpen = externalSetIsOpen || setInternalIsOpen;
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -25,6 +32,28 @@ export default function Chat() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Lock body scroll when chat is open on mobile
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+      document.body.style.height = '100%';
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.height = '';
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.height = '';
+    };
+  }, [isOpen]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,14 +158,14 @@ export default function Chat() {
         ref={chatBoxRef}
         className={`fixed z-50 transition-all duration-500 ease-in-out ${
           isOpen
-            ? 'opacity-100 scale-100 inset-0 md:inset-auto md:bottom-6 md:right-6 md:w-96 md:h-[32rem] w-full h-full'
+            ? 'opacity-100 scale-100 inset-0 md:inset-auto md:bottom-6 md:right-6 md:w-96 md:h-[32rem] w-full h-[100dvh]'
             : 'opacity-0 scale-0 bottom-4 right-4 md:bottom-6 md:right-6 w-12 h-12 md:w-16 md:h-16 pointer-events-none'
         }`}
         style={{
           transformOrigin: 'bottom right',
         }}
       >
-        <div className="w-full h-full flex flex-col bg-black/80 backdrop-blur-xl border border-indigo-400/20 rounded-none md:rounded-2xl shadow-2xl shadow-indigo-500/20 overflow-hidden">
+        <div className="w-full h-full flex flex-col bg-black/80 backdrop-blur-xl border border-indigo-400/20 rounded-none md:rounded-2xl shadow-2xl shadow-indigo-500/20">
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-5 border-b border-indigo-400/10 bg-black/40">
             <div className="flex items-center gap-3">
@@ -156,7 +185,7 @@ export default function Chat() {
           </div>
 
           {/* Messages Area - increased padding all around */}
-          <div className="flex-1 overflow-y-auto px-8 py-6 space-y-8">
+          <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6 space-y-8 overscroll-contain">
             {messages.length === 0 ? (
               <div className="h-full flex items-center justify-center px-6">
                 <p className="text-gray-400 text-center text-sm leading-relaxed">
@@ -172,13 +201,13 @@ export default function Chat() {
                   } ${message.isAnimating ? 'animate-messageSlideIn' : ''}`}
                 >
                   <div
-                    className={`max-w-[65%] shadow-md ${
+                    className={`max-w-[85%] md:max-w-[65%] shadow-md ${
                       message.sender === 'user'
                         ? 'bg-indigo-500 text-white rounded-[24px] rounded-br-md'
                         : 'bg-gray-900/90 text-white rounded-[24px] rounded-bl-md'
                     }`}
                     style={{
-                      padding: '16px 20px',
+                      padding: '12px 16px',
                     }}
                   >
                     <p className="text-sm whitespace-pre-wrap break-words" style={{ lineHeight: '1.6' }}>
@@ -194,15 +223,16 @@ export default function Chat() {
           {/* Input Area */}
           <form
             onSubmit={handleSendMessage}
-            className="px-6 py-6 border-t border-indigo-400/10 bg-black/40"
+            className="flex-shrink-0 px-4 md:px-6 py-4 md:py-6 border-t border-indigo-400/10 bg-black/40"
+            style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
           >
-            <div className="flex gap-3 items-center">
+            <div className="flex gap-2 md:gap-3 items-center">
               <input
                 type="text"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 placeholder="Ask me about my experiences..."
-                className="flex-1 px-6 py-4 text-sm bg-transparent text-white placeholder-gray-500 focus:outline-none transition-all"
+                className="flex-1 px-4 md:px-6 py-3 md:py-4 text-sm bg-gray-900/50 rounded-full text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
               />
               <button
                 type="submit"
