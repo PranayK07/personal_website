@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 
+import { Send } from 'lucide-react';
+
 export default function Hero() {
   const [typedName, setTypedName] = useState('');
   const [typedRole, setTypedRole] = useState('');
@@ -121,7 +123,60 @@ export default function Hero() {
           </div>
         )}
 
+        {/* Chat Prompt Box */}
+        {roleComplete && (
+          <div
+            className={`transform transition-all duration-1000 ease-out flex justify-center ${
+              showDescription
+                ? 'translate-y-0 opacity-100 scale-100'
+                : 'translate-y-8 opacity-0 scale-95'
+            }`}
+            style={{ transitionDelay: '400ms' }}
+          >
+            <ChatPromptBox />
+          </div>
+        )}
+
       </div>
     </section>
+  );
+}
+
+function ChatPromptBox() {
+  const [promptValue, setPromptValue] = useState('');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (promptValue.trim()) {
+      // Navigate to chat page with the prompt
+      window.location.href = `/chat?message=${encodeURIComponent(promptValue.trim())}`;
+    }
+  };
+
+  return (
+    <div className="w-full max-w-2xl px-4">
+      <div className="bg-card-bg border border-card-border rounded-2xl p-6 md:p-8 backdrop-blur-sm">
+        <p className="text-foreground/80 text-center text-base md:text-lg mb-6 leading-relaxed">
+          Too lazy to read? Chat to my assistant instead and find out exactly what you need!
+        </p>
+        <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
+          <input
+            type="text"
+            value={promptValue}
+            onChange={(e) => setPromptValue(e.target.value)}
+            placeholder="Ask me anything about my experience..."
+            className="flex-1 px-5 py-4 text-sm bg-section-bg rounded-full text-foreground placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-accent/50 transition-all border border-card-border"
+          />
+          <button
+            type="submit"
+            className="px-8 py-4 rounded-full bg-accent hover:bg-accent-hover transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-lg shadow-accent/30 text-white font-medium"
+            disabled={!promptValue.trim()}
+          >
+            <span className="text-sm">Send</span>
+            <Send className="w-4 h-4" />
+          </button>
+        </form>
+      </div>
+    </div>
   );
 }
