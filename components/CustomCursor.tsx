@@ -50,7 +50,7 @@ export default function CustomCursor() {
 
   return (
     <>
-      {/* Simple teal circle cursor */}
+      {/* Simple indigo circle cursor */}
       <div
         className="fixed pointer-events-none z-[9999]"
         style={{
@@ -65,7 +65,7 @@ export default function CustomCursor() {
           style={{
             width: '24px',
             height: '24px',
-            backgroundColor: 'rgba(20, 184, 166, 0.25)',
+            backgroundColor: 'rgba(99, 102, 241, 0.25)',
           }}
         />
       </div>

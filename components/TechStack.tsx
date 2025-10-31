@@ -104,9 +104,9 @@ function TechCard({ tech, onHover }: { tech: Tech; onHover: (hovering: boolean) 
     <div
       onMouseEnter={() => onHover(true)}
       onMouseLeave={() => onHover(false)}
-      className="group flex-shrink-0 flex flex-col items-center justify-center px-6 py-12 min-w-[140px] min-h-[180px] hover:scale-105 transition-all duration-300 cursor-pointer rounded-xl border border-white/0 shadow-[0_4px_16px_0_rgba(20,184,166,0.15)] hover:shadow-[0_4px_20px_0_rgba(20,184,166,0.3)] hover:border-white/20"
+      className="group flex-shrink-0 flex flex-col items-center justify-center px-6 py-12 min-w-[140px] min-h-[180px] hover:scale-105 transition-all duration-300 cursor-pointer rounded-xl border border-white/0 shadow-[0_4px_16px_0_rgba(99,102,241,0.15)] hover:shadow-[0_4px_20px_0_rgba(99,102,241,0.3)] hover:border-white/20"
       style={{
-        backgroundColor: 'rgba(10, 10, 10, 0.2)',
+        backgroundColor: 'rgba(10, 10, 15, 0.2)',
         backdropFilter: 'blur(16px)',
         WebkitBackdropFilter: 'blur(16px)',
       }}
@@ -225,17 +225,17 @@ export default function TechStack() {
             {/* Navigation Arrows */}
             <button
               onClick={() => handleScroll('left')}
-              className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-[0_0_20px_rgba(20,184,166,0.4)] group"
+              className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-[0_0_20px_rgba(99,102,241,0.4)] group"
               style={{
-                backgroundColor: 'rgba(20, 184, 166, 0.15)',
+                backgroundColor: 'rgba(99, 102, 241, 0.15)',
                 backdropFilter: 'blur(12px)',
                 WebkitBackdropFilter: 'blur(12px)',
-                border: '1px solid rgba(20, 184, 166, 0.3)',
+                border: '1px solid rgba(99, 102, 241, 0.3)',
               }}
               aria-label="Scroll left"
             >
               <svg
-                className="w-6 h-6 text-teal-400 group-hover:text-teal-300 transition-colors"
+                className="w-6 h-6 text-indigo-400 group-hover:text-indigo-300 transition-colors"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -246,17 +246,17 @@ export default function TechStack() {
 
             <button
               onClick={() => handleScroll('right')}
-              className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-[0_0_20px_rgba(20,184,166,0.4)] group"
+              className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-[0_0_20px_rgba(99,102,241,0.4)] group"
               style={{
-                backgroundColor: 'rgba(20, 184, 166, 0.15)',
+                backgroundColor: 'rgba(99, 102, 241, 0.15)',
                 backdropFilter: 'blur(12px)',
                 WebkitBackdropFilter: 'blur(12px)',
-                border: '1px solid rgba(20, 184, 166, 0.3)',
+                border: '1px solid rgba(99, 102, 241, 0.3)',
               }}
               aria-label="Scroll right"
             >
               <svg
-                className="w-6 h-6 text-teal-400 group-hover:text-teal-300 transition-colors"
+                className="w-6 h-6 text-indigo-400 group-hover:text-indigo-300 transition-colors"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -269,13 +269,13 @@ export default function TechStack() {
             <div
               className="absolute left-0 top-0 bottom-0 w-32 z-10 pointer-events-none"
               style={{
-                background: 'linear-gradient(to right, #0a0a0a 0%, rgba(10, 10, 10, 0.8) 40%, transparent 100%)'
+                background: 'linear-gradient(to right, #0a0a0f 0%, rgba(10, 10, 15, 0.8) 40%, transparent 100%)'
               }}
             />
             <div
               className="absolute right-0 top-0 bottom-0 w-32 z-10 pointer-events-none"
               style={{
-                background: 'linear-gradient(to left, #0a0a0a 0%, rgba(10, 10, 10, 0.8) 40%, transparent 100%)'
+                background: 'linear-gradient(to left, #0a0a0f 0%, rgba(10, 10, 15, 0.8) 40%, transparent 100%)'
               }}
             />
 

@@ -62,11 +62,11 @@ export default function Navigation() {
         className={`
           relative backdrop-blur-2xl bg-background/30
           border-2 border-white/15 rounded-3xl
-          shadow-[0_8px_32px_0_rgba(20,184,166,0.15)]
+          shadow-[0_8px_32px_0_rgba(99,102,241,0.15)]
           transition-all duration-500 ease-out
           p-3
           ${isScrolled
-            ? 'shadow-[0_8px_32px_0_rgba(20,184,166,0.3)] bg-background/40 backdrop-blur-3xl'
+            ? 'shadow-[0_8px_32px_0_rgba(99,102,241,0.3)] bg-background/40 backdrop-blur-3xl'
             : ''
           }
           before:absolute before:inset-0 before:rounded-3xl
@@ -101,10 +101,10 @@ export default function Navigation() {
                   className="absolute inset-0 bg-gradient-to-r from-accent to-accent-hover rounded-2xl animate-in fade-in duration-300"
                   style={{
                     boxShadow: `
-                      0 0 50px rgba(20, 184, 166, 0.7),
-                      0 0 80px rgba(20, 184, 166, 0.5),
-                      0 0 120px rgba(20, 184, 166, 0.3),
-                      0 0 160px rgba(20, 184, 166, 0.15)
+                      0 0 50px rgba(99, 102, 241, 0.7),
+                      0 0 80px rgba(99, 102, 241, 0.5),
+                      0 0 120px rgba(99, 102, 241, 0.3),
+                      0 0 160px rgba(99, 102, 241, 0.15)
                     `
                   }}
                 />

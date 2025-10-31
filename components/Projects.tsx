@@ -108,7 +108,7 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
       <div
         className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
         style={{
-          background: `radial-gradient(circle at ${(mousePosition.x + 1) * 50}% ${(mousePosition.y + 1) * 50}%, rgba(20, 184, 166, 0.15), transparent 50%)`,
+          background: `radial-gradient(circle at ${(mousePosition.x + 1) * 50}% ${(mousePosition.y + 1) * 50}%, rgba(99, 102, 241, 0.15), transparent 50%)`,
         }}
       />
 
@@ -116,7 +116,7 @@ function ProjectCard({ project, index }: { project: Project; index: number }) {
       <div
         className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"
         style={{
-          background: `linear-gradient(135deg, transparent 0%, rgba(20, 184, 166, 0.1) ${(mousePosition.x + 1) * 50}%, transparent 100%)`,
+          background: `linear-gradient(135deg, transparent 0%, rgba(99, 102, 241, 0.1) ${(mousePosition.x + 1) * 50}%, transparent 100%)`,
         }}
       />
 

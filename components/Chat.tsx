@@ -117,9 +117,9 @@ export default function Chat() {
         aria-label="Open chat"
       >
         <div className="relative group">
-          {/* Glassy button with strong backdrop blur and teal tint */}
-          <div className="relative w-12 h-12 md:w-16 md:h-16 rounded-full bg-teal-500/10 backdrop-blur-xl border border-teal-400/40 hover:border-teal-400/60 hover:scale-110 transition-all duration-300 flex items-center justify-center">
-            <MessageCircle className="w-5 h-5 md:w-7 md:h-7 text-teal-400" strokeWidth={2} />
+          {/* Glassy button with strong backdrop blur and indigo tint */}
+          <div className="relative w-12 h-12 md:w-16 md:h-16 rounded-full bg-indigo-500/10 backdrop-blur-xl border border-indigo-400/40 hover:border-indigo-400/60 hover:scale-110 transition-all duration-300 flex items-center justify-center">
+            <MessageCircle className="w-5 h-5 md:w-7 md:h-7 text-indigo-400" strokeWidth={2} />
           </div>
         </div>
       </button>
@@ -136,22 +136,22 @@ export default function Chat() {
           transformOrigin: 'bottom right',
         }}
       >
-        <div className="w-full h-full flex flex-col bg-black/80 backdrop-blur-xl border border-teal-400/20 rounded-none md:rounded-2xl shadow-2xl shadow-teal-500/20 overflow-hidden">
+        <div className="w-full h-full flex flex-col bg-black/80 backdrop-blur-xl border border-indigo-400/20 rounded-none md:rounded-2xl shadow-2xl shadow-indigo-500/20 overflow-hidden">
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-5 border-b border-teal-400/10 bg-black/40">
+          <div className="flex items-center justify-between px-6 py-5 border-b border-indigo-400/10 bg-black/40">
             <div className="flex items-center gap-3">
               {/* Placeholder profile image - 10% smaller */}
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white font-semibold text-xs">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center text-white font-semibold text-xs">
                 PK
               </div>
               <h3 className="text-base font-semibold text-white">Pranay Kakkar</h3>
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="w-8 h-8 rounded-full bg-teal-500/20 hover:bg-teal-500/30 transition-colors flex items-center justify-center group"
+              className="w-8 h-8 rounded-full bg-indigo-500/20 hover:bg-indigo-500/30 transition-colors flex items-center justify-center group"
               aria-label="Close chat"
             >
-              <X className="w-5 h-5 text-teal-400 group-hover:text-teal-300" />
+              <X className="w-5 h-5 text-indigo-400 group-hover:text-indigo-300" />
             </button>
           </div>
 
@@ -174,7 +174,7 @@ export default function Chat() {
                   <div
                     className={`max-w-[65%] shadow-md ${
                       message.sender === 'user'
-                        ? 'bg-teal-500 text-white rounded-[24px] rounded-br-md'
+                        ? 'bg-indigo-500 text-white rounded-[24px] rounded-br-md'
                         : 'bg-gray-900/90 text-white rounded-[24px] rounded-bl-md'
                     }`}
                     style={{
@@ -194,7 +194,7 @@ export default function Chat() {
           {/* Input Area */}
           <form
             onSubmit={handleSendMessage}
-            className="px-6 py-6 border-t border-teal-400/10 bg-black/40"
+            className="px-6 py-6 border-t border-indigo-400/10 bg-black/40"
           >
             <div className="flex gap-3 items-center">
               <input
@@ -206,7 +206,7 @@ export default function Chat() {
               />
               <button
                 type="submit"
-                className="w-11 h-11 rounded-full bg-teal-500 hover:bg-teal-600 transition-all hover:scale-105 active:scale-95 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex-shrink-0 shadow-lg shadow-teal-500/30"
+                className="w-11 h-11 rounded-full bg-indigo-500 hover:bg-indigo-600 transition-all hover:scale-105 active:scale-95 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex-shrink-0 shadow-lg shadow-indigo-500/30"
                 disabled={!inputValue.trim()}
                 aria-label="Send message"
               >
