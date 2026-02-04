@@ -16,6 +16,23 @@ interface Project {
 
 const projects: Project[] = [
   {
+    title: 'Value at Risk Estimation',
+    role: 'Researcher & Developer',
+    company: 'MIT iQuHack 2026 (3rd Place, State Street x Classiq Challenge)',
+    date: 'Jan 2026',
+    description:
+      'Developed a quantitative Value at Risk (VaR) estimation framework comparing classical Monte Carlo methods with a quantum-based estimator, demonstrating improved convergence for high-precision tail risk estimation. Designed an optimized quantile inversion pipeline for 95% VaR using interpolation-based search, reducing evaluation steps by 30–40%, and extended analysis to fat-tailed and skewed return distributions with CVaR and EVaR risk measures.',
+    technologies: [
+      'Python',
+      'Quantum Computing',
+      'Quantitative Risk Modeling',
+      'Statistical Analysis',
+      'Optimization',
+    ],
+    githubUrl: 'https://github.com/UConn-Quantum-Computing/MIT-iQuHack-2026-State-Street-Classiq',
+  },
+
+  {
     title: 'FinMate',
     role: 'Backend Engineer',
     company: 'CodeLinc 10 Hackathon (2nd Place, $2,500 Award)',
