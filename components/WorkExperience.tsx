@@ -16,6 +16,28 @@ interface Experience {
 const experiences: Experience[] = [
 
   {
+    title: 'Researcher',
+    company: 'LLM Agent-Tool Interaction & Security Research Group',
+    location: 'Storrs, CT',
+    date: 'Jan 2026 – Present',
+    description:
+      'Conducted security research on agentic AI systems, synthesizing 10+ foundational papers into a unified threat model covering prompt injection, memory poisoning, credential leakage, and unauthorized autonomous actions. Performed red-team analysis of OpenClaw agents, reproducing real-world incidents such as the Shellraiser token launch and malicious agent tooling, and translating observed failures into concrete security tests and mitigations.',
+    technologies: [
+      'Python', 'LLM Agents', 'Red Teaming', 'Threat Modeling', 'AI Safety'],
+  },
+  
+
+  {
+    title: 'Analyst',
+    company: 'Hillside Venture',
+    location: 'Storrs, CT',
+    date: 'Oct 2025 – Present',
+    description:
+      'Conducted quantitative startup analysis for a student-run venture capital fund, sourcing and evaluating 40+ early-stage fintech, AI, and SaaS companies using data-driven market research and competitive analysis. Built 3-statement financial models, unit economics, and DCF valuations for 10+ startups, applying KPI benchmarking, growth decomposition, and sensitivity analysis to support high-conviction investment decisions.',
+    technologies: [],
+  },
+
+  {
     title: 'AI/ML Researcher',
     company: 'University of Connecticut Undergraduate Research',
     location: 'Storrs, CT',
@@ -39,7 +61,7 @@ const experiences: Experience[] = [
     title: 'Programming Lead',
     company: 'Bobcat Robotics – FRC Team 177',
     location: 'South Windsor, CT',
-    date: '2024 – 2025',
+    date: '2023 – 2025',
     description:
       'Engineered a modular robotics software library with intuitive user interfaces and scalable architecture. Collaborated with the robotics team to translate functional requirements into efficient control algorithms. Authored documentation ensuring maintainability and extensibility for future teams.',
     technologies: ['Java', 'Git', 'Python', 'JavaScript', 'Robotics', 'Motion Control', 'Team Leadership'],
