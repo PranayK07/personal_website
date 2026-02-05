@@ -3,7 +3,7 @@ import React, { useRef, useEffect, useCallback, useMemo } from 'react';
 import { gsap } from 'gsap';
 import { InertiaPlugin } from 'gsap/InertiaPlugin';
 
-import './DotGrid.css';
+import styles from './DotGrid.module.css';
 
 gsap.registerPlugin(InertiaPlugin);
 
@@ -281,9 +281,9 @@ const DotGrid: React.FC<DotGridProps> = ({
   }, [maxSpeed, speedTrigger, proximity, resistance, returnDuration, shockRadius, shockStrength]);
 
   return (
-    <section className={`dot-grid ${className}`} style={style}>
-      <div ref={wrapperRef} className="dot-grid__wrap">
-        <canvas ref={canvasRef} className="dot-grid__canvas" />
+    <section className={`${styles.dotGrid} ${className}`} style={style}>
+      <div ref={wrapperRef} className={styles.dotGridWrap}>
+        <canvas ref={canvasRef} className={styles.dotGridCanvas} />
       </div>
     </section>
   );

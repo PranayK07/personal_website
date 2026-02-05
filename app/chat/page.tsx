@@ -3,9 +3,9 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Chat from '@/components/Chat';
-import DotGrid from '@/components/DotGrid';
 import CustomCursor from '@/components/CustomCursor';
 import { ArrowLeft } from 'lucide-react';
+import GravityStarsBackground from '@/components/GravityStarsBackground';
 
 function ChatPageContent() {
   const searchParams = useSearchParams();
@@ -18,18 +18,8 @@ function ChatPageContent() {
 
   return (
     <>
-      <div className="fixed top-0 left-0 w-full h-full -z-10" style={{ opacity: 0.7 }}>
-        <DotGrid
-          dotSize={2}
-          gap={40}
-          baseColor="#4a4a5a"
-          activeColor="#6366f1"
-          proximity={120}
-          shockRadius={200}
-          shockStrength={4}
-          resistance={800}
-          returnDuration={1.2}
-        />
+      <div className="fixed top-0 left-0 w-full h-full -z-10 pointer-events-none">
+        <GravityStarsBackground />
       </div>
       <CustomCursor />
 
