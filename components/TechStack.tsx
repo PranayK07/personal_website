@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState, RefObject } from 'react';
 import { useScrollAnimation } from '@/hooks/useScrollAnimation';
 import Image from 'next/image';
+import { profileData } from '@/data/profile';
 
 interface Tech {
   name: string;
@@ -26,78 +27,12 @@ interface Tech {
  *
  * Images will automatically be sized and formatted to fit the card.
  */
-const techStack: Tech[] = [
-  {
-    name: 'Python',
-    logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg',
-    color: '#3776AB'
-  },
-  {
-    name: 'Git',
-    logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/git/git-original.svg',
-    color: '#F05032'
-  },
-  {
-    name: 'TypeScript',
-    logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg',
-    color: '#3178C6'
-  },
-  {
-    name: 'MongoDB',
-    logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/mongodb/mongodb-original.svg',
-    color: '#47A248'
-  },
-  {
-    name: 'Java',
-    logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg',
-    color: '#ED8B00'
-  },
-  {
-    name: 'AWS',
-    logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/amazonwebservices/amazonwebservices-plain-wordmark.svg',
-    color: '#FF9900'
-  },
-  {
-    name: 'scikit-learn',
-    logo: 'https://upload.wikimedia.org/wikipedia/commons/0/05/Scikit_learn_logo_small.svg',
-    color: '#F7931E'
-  },
-  {
-    name: 'OpenCV',
-    logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/opencv/opencv-original.svg',
-    color: '#5C3EE8'
-  },
-  {
-    name: 'React',
-    logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg',
-    color: '#61DAFB'
-  },
-  {
-    name: 'JavaScript',
-    logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg',
-    color: '#F7DF1E'
-  },
-  {
-    name: 'Azure',
-    logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/azure/azure-original.svg',
-    color: '#0089D6'
-  },
-  {
-    name: 'Kotlin',
-    logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/kotlin/kotlin-original.svg',
-    color: '#d500ae'
-  },
-  {
-    name: 'Docker',
-    logo: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg',
-    color: '#2496ED'
-  },
-  {
-    name: 'CUDA',
-    logo: 'https://www.vectorlogo.zone/logos/nvidia/nvidia-icon.svg',
-    color: '#078912'
-  }
-];
+const techStack: Tech[] = profileData.techStack.map((tech) => ({
+  name: tech.name,
+  logo: tech.logo,
+  icon: tech.icon,
+  color: tech.color,
+}));
 
 function TechCard({ tech, onHover }: { tech: Tech; onHover: (hovering: boolean) => void }) {
   return (

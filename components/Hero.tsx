@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { profileData } from '@/data/profile';
 // Chat is rendered outside Hero to keep initial view fully centered
 
 export default function Hero() {
@@ -14,8 +15,8 @@ export default function Hero() {
   const [mounted, setMounted] = useState(false);
   // Chat should be present at all times; no scroll-triggered mount
 
-  const fullName = 'Pranay Kakkar';
-  const fullRole = 'CS @ UConn';
+  const fullName = profileData.basics.name;
+  const fullRole = profileData.basics.role;
 
   useEffect(() => {
     setMounted(true);
@@ -113,7 +114,7 @@ export default function Hero() {
               <svg className="w-4 h-4 text-accent" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
               </svg>
-              <span className="text-sm font-medium">Connecticut</span>
+              <span className="text-sm font-medium">{profileData.basics.location}</span>
             </div>
           </div>
         )}
@@ -129,7 +130,7 @@ export default function Hero() {
             style={{ transitionDelay: '200ms' }}
           >
             <p className="text-base md:text-lg text-foreground/70 w-full max-w-2xl mb-12 leading-relaxed font-light text-center px-4">
-              Hi, I'm Pranay Kakkar, a Computer Science major at UConn, passionate about applying data and machine learning to real-world problems. I've researched cryptography, ML, and physics while also enjoying soccer, astronomy, and side projects that help me learn new skills.
+              {profileData.basics.bio}
             </p>
           </div>
         )}

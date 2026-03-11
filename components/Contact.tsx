@@ -2,10 +2,14 @@
 
 import { useScrollAnimation } from '@/hooks/useScrollAnimation';
 import { useState, RefObject } from 'react';
+import { profileData } from '@/data/profile';
 
 export default function Contact() {
   const [ref, isVisible] = useScrollAnimation(0.2);
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+  const githubLink = profileData.basics.links.find((link) => link.label.toLowerCase() === 'github');
+  const linkedInLink = profileData.basics.links.find((link) => link.label.toLowerCase() === 'linkedin');
+  const twitterLink = profileData.basics.links.find((link) => link.label.toLowerCase() === 'twitter');
 
   return (
     <section id="contact" className="section py-20" style={{ scrollMarginTop: 'var(--pillnav-safe-top, 192px)' }}>
@@ -43,10 +47,10 @@ export default function Contact() {
                   </div>
                   <p className="text-xs text-muted mb-2 uppercase tracking-wider">Email</p>
                   <a
-                    href="mailto:pranay.kakkar@outlook.com"
+                    href={`mailto:${profileData.basics.email}`}
                     className="text-sm text-accent hover:text-accent-hover transition-colors font-medium"
                   >
-                    pranay.kakkar@outlook.com
+                    {profileData.basics.email}
                   </a>
                 </div>
 
@@ -59,7 +63,7 @@ export default function Contact() {
                     📍
                   </div>
                   <p className="text-xs text-muted mb-2 uppercase tracking-wider">Location</p>
-                  <p className="text-sm text-foreground font-medium">Connecticut</p>
+                  <p className="text-sm text-foreground font-medium">{profileData.basics.location}</p>
                 </div>
               </div>
 
@@ -71,7 +75,7 @@ export default function Contact() {
                 </h4>
                 <div className="flex flex-wrap justify-center gap-3">
                   <a
-                    href="https://github.com/PranayK07"
+                    href={githubLink?.url ?? 'https://github.com'}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2 px-5 py-3 bg-section-bg/50 backdrop-blur-sm rounded-xl hover:bg-accent/10 transition-all duration-300 hover:scale-105 group"
@@ -83,7 +87,7 @@ export default function Contact() {
                   </a>
 
                   <a
-                    href="https://linkedin.com/in/pranay-kakkar"
+                    href={linkedInLink?.url ?? 'https://linkedin.com'}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2 px-5 py-3 bg-section-bg/50 backdrop-blur-sm rounded-xl hover:bg-accent/10 transition-all duration-300 hover:scale-105 group"
@@ -95,7 +99,7 @@ export default function Contact() {
                   </a>
 
                   <a
-                    href="https://twitter.com/pranay_kakkar"
+                    href={twitterLink?.url ?? 'https://twitter.com'}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2 px-5 py-3 bg-section-bg/50 backdrop-blur-sm rounded-xl hover:bg-accent/10 transition-all duration-300 hover:scale-105 group"
