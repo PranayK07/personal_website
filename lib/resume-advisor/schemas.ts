@@ -18,6 +18,20 @@ export const atsKeywordSchema = z.object({
   inferred: z.boolean(),
 });
 
+const jdKeywordTaxonomySchema = z.object({
+  programming_languages: z.array(z.string()).optional(),
+  frameworks_libraries: z.array(z.string()).optional(),
+  cloud_devops: z.array(z.string()).optional(),
+  data_ml: z.array(z.string()).optional(),
+  databases: z.array(z.string()).optional(),
+  tooling: z.array(z.string()).optional(),
+  methodologies: z.array(z.string()).optional(),
+  domain_terms: z.array(z.string()).optional(),
+  soft_skills: z.array(z.string()).optional(),
+  responsibility_phrases: z.array(z.string()).optional(),
+  metrics_outcome_terms: z.array(z.string()).optional(),
+}).strict().optional();
+
 export const jdAnalysisSchema = z.object({
   jdText: z.string(),
   inferredRoleFamily: z.string(),
@@ -26,7 +40,42 @@ export const jdAnalysisSchema = z.object({
   preferredSkills: z.array(z.string()),
   missingQualifications: z.array(z.string()),
   inferredSynonyms: z.array(z.string()),
+  seniority: z.string().optional(),
+  domain: z.string().optional(),
+  taxonomy: jdKeywordTaxonomySchema,
+  topAtsTerms: z.array(z.string()).optional(),
 });
+
+export const styleProfileSchema = z.object({
+  averageBulletLength: z.number().optional(),
+  tenseUsage: z.enum(['past', 'present', 'mixed']).optional(),
+  verbStyle: z.array(z.string()).optional(),
+  metricDensity: z.enum(['high', 'medium', 'low']).optional(),
+  tone: z.enum(['technical', 'business', 'mixed']).optional(),
+  compressionLevel: z.enum(['high', 'medium', 'low']).optional(),
+}).strict().optional();
+
+export const evidenceMapSchema = z.object({
+  requirementEvidence: z.array(z.object({
+    requirementId: z.string(),
+    requirementText: z.string(),
+    evidenceStrength: z.enum(['direct', 'partial', 'none', 'inferred_risky']),
+    supportingItemIds: z.array(z.string()),
+    supportingItemType: z.enum(['experience', 'project', 'skill']),
+    confidence: z.number(),
+    notes: z.string().optional(),
+  })),
+  itemEvidence: z.array(z.object({
+    itemId: z.string(),
+    itemType: z.enum(['experience', 'project', 'skill']),
+    matchedRequiredSkills: z.array(z.string()),
+    matchedPreferredSkills: z.array(z.string()),
+    matchedDomainTerms: z.array(z.string()),
+    evidenceStrength: z.number(),
+    riskLevel: z.enum(['low', 'medium', 'high']),
+    recommendationReason: z.string(),
+  })),
+}).strict().optional();
 
 const provenanceSchema = z.object({
   source: z.enum(['website', 'uploaded_resume', 'manual_input', 'inferred']),
@@ -153,12 +202,24 @@ export const generatePreviewSchema = z.object({
     })),
   }),
   selectionState: selectionStateSchema,
+  styleProfile: styleProfileSchema,
+  evidenceMap: evidenceMapSchema,
 });
+
+const tailoredBulletMetadataSchema = z.object({
+  matchedKeywords: z.array(z.string()).optional(),
+  matchedRequirements: z.array(z.string()).optional(),
+  sourceSupport: z.enum(['direct_resume', 'website_only', 'inferred']),
+  riskLevel: z.enum(['low', 'medium', 'high']).optional(),
+  styleFitScore: z.number().optional(),
+  evidenceNotes: z.string().optional(),
+}).strict().optional();
 
 const tailoredBulletSchema = z.object({
   text: z.string(),
   provenance: provenanceSchema,
   support: z.enum(['direct_resume', 'website_only', 'inferred']),
+  metadata: tailoredBulletMetadataSchema,
 });
 
 export const tailoredResumeSchema = z.object({

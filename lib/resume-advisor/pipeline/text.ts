@@ -1,9 +1,6 @@
-const STOP_WORDS = new Set([
-  'the', 'and', 'for', 'with', 'that', 'this', 'from', 'you', 'your', 'our', 'are', 'was', 'were', 'have', 'has',
-  'will', 'would', 'should', 'can', 'could', 'about', 'into', 'across', 'using', 'use', 'used', 'their', 'them',
-  'must', 'preferred', 'plus', 'also', 'able', 'ability', 'work', 'working', 'experience', 'team', 'teams',
-  'role', 'responsibilities', 'responsibility', 'requirements', 'skills', 'skill', 'years', 'year', 'strong',
-]);
+import { STOPWORDS } from '@/lib/resume-advisor/pipeline/filters';
+
+const STOP_WORDS = STOPWORDS;
 
 export function normalizeText(input: string): string {
   return input

@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { jdAnalysis, resumeParseResult } = mergeRankSchema.parse(body);
 
-    const response = buildMergeRankResponse(profileData, resumeParseResult, jdAnalysis);
+    const response = await buildMergeRankResponse(profileData, resumeParseResult, jdAnalysis);
 
     return NextResponse.json(response);
   } catch (error) {

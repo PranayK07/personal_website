@@ -2,18 +2,21 @@ import { z } from 'zod';
 import { completeJson } from '@/lib/resume-advisor/groq';
 import {
   AggressivenessMode,
+  EvidenceMap,
   GenerationAnalysis,
   GeneratePreviewResponse,
   ItemReason,
   JobDescriptionAnalysis,
   MergedProfile,
   SelectionState,
+  StyleProfile,
   TailoredBullet,
   TailoredExperienceItem,
   TailoredProjectItem,
   TailoredResume,
 } from '@/lib/resume-advisor/types';
 import { tokenize, uniq } from '@/lib/resume-advisor/pipeline/text';
+import { buildJDContextPacket, buildCandidateContextPacket, buildMatchContextPacket } from '@/lib/resume-advisor/pipeline/context-packets';
 
 const rewriteSchema = z.object({
   experiences: z.array(z.object({
@@ -52,8 +55,16 @@ function truncateBullet(bullet: string, maxChars: number): string {
   if (bullet.length <= maxChars) {
     return bullet;
   }
-
-  return `${bullet.slice(0, maxChars - 1).trimEnd()}…`;
+  const slice = bullet.slice(0, maxChars);
+  const lastPeriod = slice.lastIndexOf('.');
+  const lastSpace = slice.lastIndexOf(' ');
+  if (lastPeriod > maxChars * 0.4) {
+    return slice.slice(0, lastPeriod + 1).trim();
+  }
+  if (lastSpace > maxChars * 0.5) {
+    return slice.slice(0, lastSpace).trim();
+  }
+  return `${slice.trimEnd()}…`;
 }
 
 function maxCharsForMode(mode: AggressivenessMode): number {
@@ -132,90 +143,117 @@ function supportFromSource(source: string): TailoredBullet['support'] {
   return 'inferred';
 }
 
+const BULLET_REWRITER_SYSTEM = `You are a recruiter-aware resume bullet optimizer. Rewrite only the selected experience and project bullets.
+
+Critical rules:
+- Every bullet MUST be a complete sentence. Start with a strong verb, end with a period. Never truncate, cut off, or leave a sentence unfinished. If space is limited, rewrite the full thought in fewer words rather than stopping mid-sentence.
+- Preserve immutable facts: employer, school, title, GPA, links, dates. Do not change them.
+- Preserve plausibility and chronology. Do not invent experiences or impossible claims.
+- Incorporate high-value JD terms naturally; avoid keyword stuffing.
+- Follow the candidate's style profile when provided (bullet length, tense, tone).
+- Keep bullets concise and one-page friendly. Prefer strong verbs and measurable outcomes.
+- Return strict JSON only. Output shape: { experiences: [{ id, bullets: string[] }], projects: [{ id, bullets: string[] }], riskyUnsupportedAdditions: [{ text, reason }] }.
+- In riskyUnsupportedAdditions list any phrase you added that is not directly supported by the original bullet or profile.`;
+
 async function rewriteSelectedBullets(
   experience: TailoredExperienceItem[],
   projects: TailoredProjectItem[],
   jdAnalysis: JobDescriptionAnalysis,
   aggressiveness: AggressivenessMode,
+  styleProfile: StyleProfile | null,
+  jdPacket: ReturnType<typeof buildJDContextPacket>,
 ): Promise<z.infer<typeof rewriteSchema>> {
   const keywordFocus = uniq([
+    ...(jdAnalysis.topAtsTerms || jdAnalysis.atsKeywords.map((item) => item.keyword)),
     ...jdAnalysis.mustHaveSkills,
     ...jdAnalysis.preferredSkills,
-    ...jdAnalysis.atsKeywords.map((item) => item.keyword),
     ...jdAnalysis.inferredSynonyms,
-  ]).slice(0, 24);
-
-  const system = [
-    'You rewrite resume bullets for ATS optimization while preserving plausibility.',
-    'Never change employer names, school names, titles, GPA, links, or dates.',
-    'Respect role integrity and avoid impossible fabrication.',
-    'Return strict JSON only.',
-  ].join(' ');
+  ]).filter((k) => k.length >= 2).slice(0, 28);
 
   const aggressivenessLabel = aggressiveness === 'aggressive_ats'
     ? 'Aggressive ATS (high keyword saturation, still plausible).'
     : aggressiveness === 'conservative'
       ? 'Conservative (minimal reframing).'
-      : 'Balanced (default; strategic but plausible).';
+      : 'Balanced (strategic but plausible).';
 
   const user = JSON.stringify({
     aggressiveness: aggressivenessLabel,
     keywordFocus,
-    experience,
-    projects,
+    jdRole: jdPacket.role,
+    topAtsTerms: jdPacket.topAtsTerms.slice(0, 20),
+    styleHints: styleProfile ? {
+      averageBulletLength: styleProfile.averageBulletLength,
+      tense: styleProfile.tenseUsage,
+      tone: styleProfile.tone,
+    } : undefined,
+    experience: experience.map((e) => ({
+      id: e.id,
+      title: e.title,
+      company: e.company,
+      bullets: e.bullets.map((b) => b.text),
+    })),
+    projects: projects.map((p) => ({
+      id: p.id,
+      title: p.title,
+      role: p.role,
+      bullets: p.bullets.map((b) => b.text),
+    })),
     outputShape: {
       experiences: [{ id: 'string', bullets: ['string'] }],
       projects: [{ id: 'string', bullets: ['string'] }],
       riskyUnsupportedAdditions: [{ text: 'string', reason: 'string' }],
     },
+    reminder: 'Each bullet must be one full sentence ending with a period. Do not truncate any bullet.',
   });
 
   return rewriteSchema.parse(await completeJson({
-    system,
+    system: BULLET_REWRITER_SYSTEM,
     user,
-    // Slightly higher temperature helps phrasing diversity while keeping structure stable.
-    temperature: 0.35,
-    maxTokens: 1700,
+    temperature: 0.3,
+    maxTokens: 2400,
   }));
 }
 
 function buildReasons(
   resume: TailoredResume,
   jdAnalysis: JobDescriptionAnalysis,
+  evidenceMap: EvidenceMap | undefined,
 ): ItemReason[] {
   const keywords = uniq([
+    ...(jdAnalysis.topAtsTerms || jdAnalysis.atsKeywords.map((item) => item.keyword)),
     ...jdAnalysis.mustHaveSkills,
     ...jdAnalysis.preferredSkills,
-    ...jdAnalysis.atsKeywords.map((item) => item.keyword),
-  ]);
+  ]).filter((k) => k.length >= 2);
+
+  const byItem = evidenceMap ? new Map(evidenceMap.itemEvidence.map((ie) => [ie.itemId, ie])) : undefined;
 
   const reasons: ItemReason[] = [];
 
   for (const exp of resume.experience) {
-    const text = `${exp.title} ${exp.company} ${exp.bullets.map((bullet) => bullet.text).join(' ')}`;
+    const ev = byItem?.get(exp.id);
+    const text = `${exp.title} ${exp.company} ${exp.bullets.map((b) => b.text).join(' ')}`;
     const matched = scoreKeywordCoverage(text, keywords);
+    const matchList = ev ? [...ev.matchedRequiredSkills, ...ev.matchedPreferredSkills] : matched;
 
     reasons.push({
       itemId: exp.id,
       itemType: 'experience',
-      reasonLabel: matched.length >= 5 ? 'high keyword overlap' : matched.length >= 2 ? 'role-aligned experience' : 'transferable experience',
-      explanation: matched.length > 0
-        ? `Selected because it covers ${matched.slice(0, 5).join(', ')} and maps directly to the JD scope.`
-        : 'Selected for transferable responsibilities despite lower direct keyword overlap.',
+      reasonLabel: (matchList.length >= 4 ? 'high overlap' : matchList.length >= 2 ? 'role-aligned' : 'transferable'),
+      explanation: matchList.length > 0 ? `Include: ${matchList.slice(0, 3).join(', ')}` : 'Transferable',
     });
   }
 
   for (const proj of resume.projects) {
-    const text = `${proj.title} ${proj.bullets.map((bullet) => bullet.text).join(' ')}`;
+    const ev = byItem?.get(proj.id);
+    const text = `${proj.title} ${proj.bullets.map((b) => b.text).join(' ')}`;
     const matched = scoreKeywordCoverage(text, keywords);
+    const matchList = ev ? [...ev.matchedRequiredSkills, ...ev.matchedPreferredSkills] : matched;
 
     reasons.push({
       itemId: proj.id,
       itemType: 'project',
-      reasonLabel: matched.length >= 4 ? 'high keyword overlap' : 'project relevance',
-      explanation: matched.length > 0
-        ? `Included to strengthen ATS keyword density for ${matched.slice(0, 5).join(', ')}.`
-        : 'Included as adjacent, credible project evidence.',
+      reasonLabel: matchList.length >= 3 ? 'high overlap' : 'relevant',
+      explanation: matchList.length > 0 ? `Include: ${matchList.slice(0, 3).join(', ')}` : 'Relevant',
     });
   }
 
@@ -224,10 +262,8 @@ function buildReasons(
   reasons.push({
     itemId: 'skills',
     itemType: 'skill',
-    reasonLabel: matchedSkills.length > 0 ? 'ATS-aligned skills' : 'adjacent transferable skills',
-    explanation: matchedSkills.length > 0
-      ? `Skills section includes ${matchedSkills.slice(0, 8).join(', ')} for ATS coverage.`
-      : 'Skills were retained for transferable relevance.',
+    reasonLabel: matchedSkills.length > 0 ? 'ATS-aligned' : 'transferable',
+    explanation: matchedSkills.length > 0 ? `Include: ${matchedSkills.slice(0, 4).join(', ')}` : 'Supporting',
   });
 
   return reasons;
@@ -238,29 +274,39 @@ function buildAnalysis(
   jdAnalysis: JobDescriptionAnalysis,
   itemReasons: ItemReason[],
   riskyUnsupportedAdditions: GenerationAnalysis['riskyUnsupportedAdditions'],
+  evidenceMap: EvidenceMap | undefined,
 ): GenerationAnalysis {
   const allKeywords = uniq([
-    ...jdAnalysis.atsKeywords.map((item) => item.keyword),
+    ...(jdAnalysis.topAtsTerms || jdAnalysis.atsKeywords.map((item) => item.keyword)),
     ...jdAnalysis.mustHaveSkills,
     ...jdAnalysis.preferredSkills,
-  ]);
+  ]).filter((k) => k.length >= 2);
 
   const textBlob = [
     resume.education.map((item) => `${item.school} ${item.degree} ${item.coursework?.join(' ') || ''}`).join(' '),
-    resume.experience.map((item) => `${item.title} ${item.company} ${item.bullets.map((bullet) => bullet.text).join(' ')}`).join(' '),
-    resume.projects.map((item) => `${item.title} ${item.bullets.map((bullet) => bullet.text).join(' ')}`).join(' '),
+    resume.experience.map((item) => `${item.title} ${item.company} ${item.bullets.map((b) => b.text).join(' ')}`).join(' '),
+    resume.projects.map((item) => `${item.title} ${item.bullets.map((b) => b.text).join(' ')}`).join(' '),
     resume.skills.map((group) => `${group.label} ${group.skills.join(' ')}`).join(' '),
   ].join(' ');
 
   const present = scoreKeywordCoverage(textBlob, allKeywords);
-  const missing = allKeywords.filter((keyword) => !present.includes(keyword)).slice(0, 20);
+  const missing = allKeywords.filter((keyword) => !present.includes(keyword)).slice(0, 25);
 
   const score = allKeywords.length === 0
     ? 0
     : Math.round((present.length / allKeywords.length) * 100);
 
+  const mustHaveList = jdAnalysis.mustHaveSkills.filter((k) => k.length >= 2);
+  const preferredList = jdAnalysis.preferredSkills.filter((k) => k.length >= 2);
+  const mustHavePresent = scoreKeywordCoverage(textBlob, mustHaveList);
+  const preferredPresent = scoreKeywordCoverage(textBlob, preferredList);
+  const mustHaveCoverage = mustHaveList.length === 0 ? 100 : Math.round((mustHavePresent.length / mustHaveList.length) * 100);
+  const preferredCoverage = preferredList.length === 0 ? 100 : Math.round((preferredPresent.length / preferredList.length) * 100);
+
   return {
     atsMatchScore: score,
+    mustHaveCoverage,
+    preferredCoverage,
     exactKeywordsPresent: present,
     importantKeywordsMissing: missing,
     inferredSynonymsAdded: jdAnalysis.inferredSynonyms.filter((synonym) => textBlob.toLowerCase().includes(synonym.toLowerCase())),
@@ -494,7 +540,12 @@ export async function generateTailoredPreview(
   mergedProfile: MergedProfile,
   selectionState: SelectionState,
   jdAnalysis: JobDescriptionAnalysis,
+  options?: { styleProfile?: StyleProfile | null; evidenceMap?: EvidenceMap | null },
 ): Promise<GeneratePreviewResponse> {
+  const styleProfile = options?.styleProfile ?? null;
+  const evidenceMap = options?.evidenceMap ?? null;
+  const jdPacket = buildJDContextPacket(jdAnalysis);
+
   const selectedExperiences = mergedProfile.experience
     .filter((item) => selectionState.selectedExperienceIds.includes(item.id))
     .slice(0, 4)
@@ -541,11 +592,11 @@ export async function generateTailoredPreview(
   })).filter((group) => group.skills.length > 0);
 
   const keywordFocus = uniq([
+    ...(jdAnalysis.topAtsTerms || jdAnalysis.atsKeywords.map((item) => item.keyword)),
     ...jdAnalysis.mustHaveSkills,
     ...jdAnalysis.preferredSkills,
-    ...jdAnalysis.atsKeywords.map((item) => item.keyword),
     ...jdAnalysis.inferredSynonyms,
-  ]).slice(0, 20);
+  ]).filter((k) => k.length >= 2).slice(0, 24);
 
   let riskyUnsupportedAdditions: GenerationAnalysis['riskyUnsupportedAdditions'] = [];
 
@@ -555,6 +606,8 @@ export async function generateTailoredPreview(
       selectedProjects,
       jdAnalysis,
       selectionState.aggressiveness,
+      styleProfile,
+      jdPacket,
     );
 
     riskyUnsupportedAdditions = rewritten.riskyUnsupportedAdditions;
@@ -563,30 +616,52 @@ export async function generateTailoredPreview(
       const rewrite = rewritten.experiences.find((item) => item.id === exp.id);
       if (!rewrite) continue;
 
-      exp.bullets = rewrite.bullets.slice(0, 4).map((bullet) => ({
-        text: bullet,
-        provenance: {
-          source: exp.provenance.source,
-          confidence: Math.max(0.6, exp.provenance.confidence - 0.1),
-          note: 'LLM rewritten for ATS alignment',
-        },
-        support: exp.bullets[0]?.support || 'website_only',
-      }));
+      const support = exp.bullets[0]?.support || 'website_only';
+      exp.bullets = rewrite.bullets.slice(0, 4).map((bullet) => {
+        const matched = scoreKeywordCoverage(bullet, keywordFocus);
+        const riskLevel = matched.length >= 3 ? 'low' : matched.length >= 1 ? 'medium' : 'high';
+        return {
+          text: bullet,
+          provenance: {
+            source: exp.provenance.source,
+            confidence: Math.max(0.6, exp.provenance.confidence - 0.1),
+            note: 'LLM rewritten for ATS alignment',
+          },
+          support,
+          metadata: {
+            matchedKeywords: matched.slice(0, 8),
+            sourceSupport: support,
+            riskLevel: riskLevel as 'low' | 'medium' | 'high',
+            evidenceNotes: matched.length > 0 ? `Matches: ${matched.slice(0, 4).join(', ')}` : undefined,
+          },
+        };
+      });
     }
 
     for (const project of selectedProjects) {
       const rewrite = rewritten.projects.find((item) => item.id === project.id);
       if (!rewrite) continue;
 
-      project.bullets = rewrite.bullets.slice(0, 3).map((bullet) => ({
-        text: bullet,
-        provenance: {
-          source: project.provenance.source,
-          confidence: Math.max(0.6, project.provenance.confidence - 0.1),
-          note: 'LLM rewritten for ATS alignment',
-        },
-        support: project.bullets[0]?.support || 'website_only',
-      }));
+      const support = project.bullets[0]?.support || 'website_only';
+      project.bullets = rewrite.bullets.slice(0, 3).map((bullet) => {
+        const matched = scoreKeywordCoverage(bullet, keywordFocus);
+        const riskLevel = matched.length >= 2 ? 'low' : matched.length >= 1 ? 'medium' : 'high';
+        return {
+          text: bullet,
+          provenance: {
+            source: project.provenance.source,
+            confidence: Math.max(0.6, project.provenance.confidence - 0.1),
+            note: 'LLM rewritten for ATS alignment',
+          },
+          support,
+          metadata: {
+            matchedKeywords: matched.slice(0, 6),
+            sourceSupport: support,
+            riskLevel: riskLevel as 'low' | 'medium' | 'high',
+            evidenceNotes: matched.length > 0 ? `Matches: ${matched.slice(0, 3).join(', ')}` : undefined,
+          },
+        };
+      });
     }
   } catch {
     for (const exp of selectedExperiences) {
@@ -625,8 +700,8 @@ export async function generateTailoredPreview(
   tailoredResume = ensureImmutableFields(mergedProfile, tailoredResume);
   tailoredResume = enforceOnePageBudget(tailoredResume, selectionState.aggressiveness);
 
-  const reasons = buildReasons(tailoredResume, jdAnalysis);
-  const analysis = buildAnalysis(tailoredResume, jdAnalysis, reasons, riskyUnsupportedAdditions);
+  const reasons = buildReasons(tailoredResume, jdAnalysis, evidenceMap ?? undefined);
+  const analysis = buildAnalysis(tailoredResume, jdAnalysis, reasons, riskyUnsupportedAdditions, evidenceMap ?? undefined);
 
   return {
     tailoredResume,

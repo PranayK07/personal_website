@@ -8,6 +8,8 @@ import {
   ResumeParseResult,
 } from '@/lib/resume-advisor/types';
 import { tokenize, uniq } from '@/lib/resume-advisor/pipeline/text';
+import { buildEvidenceMap } from '@/lib/resume-advisor/pipeline/evidence-map';
+import { extractStyleProfile } from '@/lib/resume-advisor/pipeline/style-profile';
 
 function normalizeKey(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -212,11 +214,11 @@ function reasonLabels(overlapCount: number, text: string): string[] {
 
 export function rankMergedProfile(mergedProfile: MergedProfile, jdAnalysis: JobDescriptionAnalysis): RankedItem[] {
   const keywordList = uniq([
-    ...jdAnalysis.atsKeywords.map((item) => item.keyword),
+    ...(jdAnalysis.topAtsTerms || jdAnalysis.atsKeywords.map((item) => item.keyword)),
     ...jdAnalysis.mustHaveSkills,
     ...jdAnalysis.preferredSkills,
     ...jdAnalysis.inferredSynonyms,
-  ]);
+  ]).filter((k) => k.length >= 2);
 
   const ranked: RankedItem[] = [];
 
@@ -230,7 +232,9 @@ export function rankMergedProfile(mergedProfile: MergedProfile, jdAnalysis: JobD
       itemType: 'experience',
       score: Number((score * 100).toFixed(2)),
       labels,
-      explanation: `Matched ${overlap.length} relevant JD terms; strongest overlap includes ${overlap.slice(0, 5).join(', ') || 'transferable experience'}.`,
+      explanation: overlap.length > 0
+        ? `Include: ${overlap.slice(0, 3).join(', ')}`
+        : 'Transferable',
     });
   }
 
@@ -244,7 +248,9 @@ export function rankMergedProfile(mergedProfile: MergedProfile, jdAnalysis: JobD
       itemType: 'project',
       score: Number((score * 100).toFixed(2)),
       labels,
-      explanation: `Project maps to ${overlap.length} JD terms and supports ATS keyword coverage with concrete tools.`,
+      explanation: overlap.length > 0
+        ? `Include: ${overlap.slice(0, 3).join(', ')}`
+        : 'Relevant',
     });
   }
 
@@ -258,21 +264,83 @@ export function rankMergedProfile(mergedProfile: MergedProfile, jdAnalysis: JobD
       score: Number((score * 100).toFixed(2)),
       labels: overlap.length > 0 ? ['keyword-supported skill group'] : ['lower direct relevance'],
       explanation: overlap.length > 0
-        ? `Contains ${overlap.length} directly requested skills from the JD.`
-        : 'Useful adjacent tools, but lower direct keyword overlap with this JD.',
+        ? `Include: ${overlap.slice(0, 3).join(', ')}`
+        : 'Supporting',
     });
   }
 
   return ranked.sort((a, b) => b.score - a.score);
 }
 
-export function buildMergeRankResponse(
+function rankWithEvidenceMap(
+  mergedProfile: MergedProfile,
+  jdAnalysis: JobDescriptionAnalysis,
+  evidenceMap: ReturnType<typeof buildEvidenceMap>,
+): RankedItem[] {
+  const byItem = new Map<string, { strength: number; reason: string; matched: string[] }>();
+  for (const ie of evidenceMap.itemEvidence) {
+    const matched = [
+      ...ie.matchedRequiredSkills.slice(0, 5),
+      ...ie.matchedPreferredSkills.slice(0, 3),
+    ];
+    byItem.set(ie.itemId, {
+      strength: ie.evidenceStrength,
+      reason: ie.recommendationReason,
+      matched,
+    });
+  }
+
+  const ranked: RankedItem[] = [];
+
+  for (const exp of mergedProfile.experience) {
+    const ev = byItem.get(exp.id);
+    const score = ev ? ev.strength * 100 : 0;
+    const labels = ev && ev.matched.length >= 3 ? ['high evidence match'] : ev && ev.matched.length >= 1 ? ['solid match'] : ['transferable'];
+    ranked.push({
+      id: exp.id,
+      itemType: 'experience',
+      score: Number(score.toFixed(2)),
+      labels: labels.slice(0, 3),
+      explanation: ev?.reason ?? 'Transferable',
+    });
+  }
+
+  for (const proj of mergedProfile.projects) {
+    const ev = byItem.get(proj.id);
+    const score = ev ? ev.strength * 100 : 0;
+    const labels = ev && ev.matched.length >= 2 ? ['high evidence match'] : ev ? ['solid match'] : ['relevant project'];
+    ranked.push({
+      id: proj.id,
+      itemType: 'project',
+      score: Number(score.toFixed(2)),
+      labels: labels.slice(0, 3),
+      explanation: ev?.reason ?? 'Relevant',
+    });
+  }
+
+  for (const group of mergedProfile.skills) {
+    const ev = byItem.get(group.id);
+    const score = ev ? ev.strength * 100 : 0;
+    ranked.push({
+      id: group.id,
+      itemType: 'skill',
+      score: Number(score.toFixed(2)),
+      labels: ev && ev.matched.length > 0 ? ['JD-aligned skills'] : ['supporting skills'],
+      explanation: ev?.reason ?? 'Supporting',
+    });
+  }
+
+  return ranked.sort((a, b) => b.score - a.score);
+}
+
+export async function buildMergeRankResponse(
   baseProfile: Profile,
   resumeParse: ResumeParseResult | null,
   jdAnalysis: JobDescriptionAnalysis,
-): MergeRankResponse {
+): Promise<MergeRankResponse> {
   const mergedProfile = mergeProfiles(baseProfile, resumeParse);
-  const rankedItems = rankMergedProfile(mergedProfile, jdAnalysis);
+  const evidenceMap = buildEvidenceMap(jdAnalysis, mergedProfile);
+  const rankedItems = rankWithEvidenceMap(mergedProfile, jdAnalysis, evidenceMap);
 
   const selectedExperienceIds = rankedItems
     .filter((item) => item.itemType === 'experience')
@@ -284,14 +352,23 @@ export function buildMergeRankResponse(
     .slice(0, 3)
     .map((item) => item.id);
 
+  const keywordSet = new Set([
+    ...(jdAnalysis.topAtsTerms || jdAnalysis.atsKeywords.map((k) => k.keyword)),
+    ...jdAnalysis.mustHaveSkills,
+    ...jdAnalysis.preferredSkills,
+  ].map((s) => normalizeKey(s)));
+
   const selectedSkillNames = mergedProfile.skills
     .flatMap((group) => group.skills)
-    .filter((skill) => {
-      const key = normalizeKey(skill);
-      return jdAnalysis.atsKeywords.some((kw) => normalizeKey(kw.keyword) === key)
-        || jdAnalysis.mustHaveSkills.some((req) => normalizeKey(req) === key)
-        || jdAnalysis.preferredSkills.some((req) => normalizeKey(req) === key);
-    });
+    .filter((skill) => keywordSet.has(normalizeKey(skill)));
+
+  let styleProfile;
+  try {
+    const rawText = resumeParse?.rawText || mergedProfile.experience.flatMap((e) => e.bullets || []).join('\n') || mergedProfile.basics.bio;
+    styleProfile = rawText.length > 100 ? await extractStyleProfile(rawText) : undefined;
+  } catch {
+    styleProfile = undefined;
+  }
 
   return {
     mergedProfile,
@@ -299,8 +376,10 @@ export function buildMergeRankResponse(
     selectionState: {
       selectedExperienceIds,
       selectedProjectIds,
-      selectedSkillNames: uniq(selectedSkillNames).slice(0, 16),
+      selectedSkillNames: uniq(selectedSkillNames).slice(0, 20),
       aggressiveness: 'balanced',
     },
+    styleProfile,
+    evidenceMap,
   };
 }

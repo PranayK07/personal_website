@@ -463,6 +463,8 @@ export default function ResumeAdvisorApp({ initialAuthenticated }: ResumeAdvisor
           jdAnalysis,
           mergedProfile: mergeRankResult.mergedProfile,
           selectionState,
+          styleProfile: mergeRankResult.styleProfile ?? undefined,
+          evidenceMap: mergeRankResult.evidenceMap ?? undefined,
         }),
       });
 
@@ -910,14 +912,29 @@ export default function ResumeAdvisorApp({ initialAuthenticated }: ResumeAdvisor
             >
               {previewResult ? (
                 <div className="space-y-5">
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <div className="rounded-2xl bg-white/[0.04] p-6">
                       <p className="text-xs uppercase tracking-[0.16em] text-white/60">ATS Match Score</p>
                       <p className="mt-2 text-3xl font-semibold text-emerald-300">
                         {previewResult.generationAnalysis.atsMatchScore}%
                       </p>
                     </div>
-
+                    {previewResult.generationAnalysis.mustHaveCoverage != null && (
+                      <div className="rounded-2xl bg-white/[0.04] p-6">
+                        <p className="text-xs uppercase tracking-[0.16em] text-white/60">Must-have coverage</p>
+                        <p className="mt-2 text-2xl font-semibold text-white/90">
+                          {previewResult.generationAnalysis.mustHaveCoverage}%
+                        </p>
+                      </div>
+                    )}
+                    {previewResult.generationAnalysis.preferredCoverage != null && (
+                      <div className="rounded-2xl bg-white/[0.04] p-6">
+                        <p className="text-xs uppercase tracking-[0.16em] text-white/60">Preferred coverage</p>
+                        <p className="mt-2 text-2xl font-semibold text-white/90">
+                          {previewResult.generationAnalysis.preferredCoverage}%
+                        </p>
+                      </div>
+                    )}
                     <div className="rounded-2xl bg-white/[0.04] p-6 text-sm leading-relaxed text-white/85">
                       <p className="font-semibold">Provenance legend</p>
                       <p className="mt-1">direct_resume = supported by uploaded resume</p>

@@ -92,10 +92,43 @@ export interface Profile {
   overrides?: ProfileOverride[];
 }
 
+export type ATSKeywordCategory =
+  | 'technical'
+  | 'domain'
+  | 'responsibility'
+  | 'tooling'
+  | 'programming_languages'
+  | 'frameworks_libraries'
+  | 'cloud_devops'
+  | 'data_ml'
+  | 'databases'
+  | 'methodologies'
+  | 'soft_skills'
+  | 'metrics_outcome';
+
 export interface ATSKeyword {
   keyword: string;
   category: 'technical' | 'domain' | 'responsibility' | 'tooling';
   inferred: boolean;
+}
+
+/** Taxonomy of JD keywords by category for recruiter-grade screening. */
+export interface JDKeywordTaxonomy {
+  programming_languages?: string[];
+  frameworks_libraries?: string[];
+  cloud_devops?: string[];
+  data_ml?: string[];
+  security?: string[];
+  analytics_bi?: string[];
+  backend_platform?: string[];
+  frontend_platform?: string[];
+  databases?: string[];
+  tooling?: string[];
+  methodologies?: string[];
+  domain_terms?: string[];
+  soft_skills?: string[];
+  responsibility_phrases?: string[];
+  metrics_outcome_terms?: string[];
 }
 
 export interface JobDescriptionAnalysis {
@@ -106,6 +139,13 @@ export interface JobDescriptionAnalysis {
   preferredSkills: string[];
   missingQualifications: string[];
   inferredSynonyms: string[];
+  /** Optional: seniority, domain, structured requirements. */
+  seniority?: string;
+  domain?: string;
+  /** Optional: taxonomy by category; used for better ranking and context. */
+  taxonomy?: JDKeywordTaxonomy;
+  /** Top ATS terms ranked by importance (filtered, no junk). */
+  topAtsTerms?: string[];
 }
 
 export interface ResumeParseSection {
@@ -148,10 +188,21 @@ export interface SelectionState {
   aggressiveness: AggressivenessMode;
 }
 
+/** Optional metadata per bullet for analysis panel and audit. */
+export interface TailoredBulletMetadata {
+  matchedKeywords?: string[];
+  matchedRequirements?: string[];
+  sourceSupport: 'direct_resume' | 'website_only' | 'inferred';
+  riskLevel?: 'low' | 'medium' | 'high';
+  styleFitScore?: number;
+  evidenceNotes?: string;
+}
+
 export interface TailoredBullet {
   text: string;
   provenance: Provenance;
   support: 'direct_resume' | 'website_only' | 'inferred';
+  metadata?: TailoredBulletMetadata;
 }
 
 export interface TailoredExperienceItem {
@@ -199,6 +250,8 @@ export interface RiskyAddition {
 
 export interface GenerationAnalysis {
   atsMatchScore: number;
+  mustHaveCoverage?: number;
+  preferredCoverage?: number;
   exactKeywordsPresent: string[];
   importantKeywordsMissing: string[];
   inferredSynonymsAdded: string[];
@@ -209,10 +262,52 @@ export interface GenerationAnalysis {
 
 export type AggressivenessMode = 'conservative' | 'balanced' | 'aggressive_ats';
 
+/** Writing-style fingerprint from resume for consistent bullet rewriting. */
+export interface StyleProfile {
+  averageBulletLength?: number;
+  tenseUsage?: 'past' | 'present' | 'mixed';
+  verbStyle?: string[];
+  metricDensity?: 'high' | 'medium' | 'low';
+  punctuationStyle?: string;
+  tone?: 'technical' | 'business' | 'mixed';
+  compressionLevel?: 'high' | 'medium' | 'low';
+}
+
+/** Evidence strength for a requirement. */
+export type EvidenceStrength = 'direct' | 'partial' | 'none' | 'inferred_risky';
+
+export interface RequirementEvidence {
+  requirementId: string;
+  requirementText: string;
+  evidenceStrength: EvidenceStrength;
+  supportingItemIds: string[];
+  supportingItemType: 'experience' | 'project' | 'skill';
+  confidence: number;
+  notes?: string;
+}
+
+export interface ItemEvidence {
+  itemId: string;
+  itemType: 'experience' | 'project' | 'skill';
+  matchedRequiredSkills: string[];
+  matchedPreferredSkills: string[];
+  matchedDomainTerms: string[];
+  evidenceStrength: number;
+  riskLevel: 'low' | 'medium' | 'high';
+  recommendationReason: string;
+}
+
+export interface EvidenceMap {
+  requirementEvidence: RequirementEvidence[];
+  itemEvidence: ItemEvidence[];
+}
+
 export interface MergeRankResponse {
   mergedProfile: MergedProfile;
   rankedItems: RankedItem[];
   selectionState: SelectionState;
+  styleProfile?: StyleProfile;
+  evidenceMap?: EvidenceMap;
 }
 
 export interface GeneratePreviewResponse {
