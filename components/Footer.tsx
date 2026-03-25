@@ -25,17 +25,13 @@ export default function Footer() {
   }, []);
 
   return (
-    <footer className="py-8 border-t border-card-border bg-section-bg">
-      <div className="container">
-        <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-4 text-center">
-          <div className="text-muted text-sm order-2 sm:order-1">
-            © 2025 Pranay Kakkar. All rights reserved.
-          </div>
-          <div className="flex items-center gap-2 text-accent order-1 sm:order-2">
-            <span className="text-xs sm:text-sm">My time zone:</span>
-            <span className="font-mono text-xs sm:text-sm font-medium">{time}</span>
-          </div>
-        </div>
+    <footer className="border-t border-[var(--line)]">
+      <div className="mx-auto flex max-w-[var(--content-max)] flex-col gap-4 px-4 py-10 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+        <p className="text-[0.8125rem] text-[var(--muted)]">© {new Date().getFullYear()} Pranay Kakkar</p>
+        <p className="text-[0.8125rem] text-[var(--muted)]">
+          <span className="text-[var(--muted)]">Eastern Time · </span>
+          <span className="tabular-nums text-[var(--fg)]">{time}</span>
+        </p>
       </div>
     </footer>
   );

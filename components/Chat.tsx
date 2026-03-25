@@ -3,9 +3,7 @@
 import { useState, useRef, useEffect, ReactNode } from 'react';
 import { MessageCircle, X, Send } from 'lucide-react';
 
-// Helper function to convert markdown links to clickable HTML
 function renderMarkdownLinks(text: string): ReactNode {
-  // Match markdown links [text](url)
   const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
   const parts: ReactNode[] = [];
   let lastIndex = 0;
@@ -13,16 +11,12 @@ function renderMarkdownLinks(text: string): ReactNode {
   let keyIndex = 0;
 
   while ((match = linkRegex.exec(text)) !== null) {
-    // Add text before the link
     if (match.index > lastIndex) {
       parts.push(
-        <span key={`text-${keyIndex++}`}>
-          {text.substring(lastIndex, match.index)}
-        </span>
+        <span key={`text-${keyIndex++}`}>{text.substring(lastIndex, match.index)}</span>
       );
     }
 
-    // Add the link
     const linkText = match[1];
     const url = match[2];
     parts.push(
@@ -31,7 +25,7 @@ function renderMarkdownLinks(text: string): ReactNode {
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-indigo-300 hover:text-indigo-200 underline transition-colors"
+        className="text-[var(--accent)] underline decoration-[var(--line)] underline-offset-2 transition-colors hover:decoration-[var(--accent)]"
       >
         {linkText}
       </a>
@@ -40,13 +34,8 @@ function renderMarkdownLinks(text: string): ReactNode {
     lastIndex = match.index + match[0].length;
   }
 
-  // Add remaining text
   if (lastIndex < text.length) {
-    parts.push(
-      <span key={`text-${keyIndex++}`}>
-        {text.substring(lastIndex)}
-      </span>
-    );
+    parts.push(<span key={`text-${keyIndex++}`}>{text.substring(lastIndex)}</span>);
   }
 
   return parts.length > 0 ? <>{parts}</> : <>{text}</>;
@@ -60,6 +49,20 @@ interface Message {
   isAnimating?: boolean;
 }
 
+async function parseErrorResponse(res: Response): Promise<string> {
+  const ct = res.headers.get('content-type') ?? '';
+  try {
+    if (ct.includes('application/json')) {
+      const j = (await res.json()) as { error?: string; details?: string };
+      return j.details || j.error || `Request failed (${res.status})`;
+    }
+    const text = await res.text();
+    return text.trim() || `Request failed (${res.status})`;
+  } catch {
+    return `Request failed (${res.status})`;
+  }
+}
+
 interface ChatProps {
   isOpen?: boolean;
   setIsOpen?: (isOpen: boolean) => void;
@@ -67,7 +70,12 @@ interface ChatProps {
   fullPage?: boolean;
 }
 
-export default function Chat({ isOpen: externalIsOpen, setIsOpen: externalSetIsOpen, initialMessage, fullPage = false }: ChatProps = {}) {
+export default function Chat({
+  isOpen: externalIsOpen,
+  setIsOpen: externalSetIsOpen,
+  initialMessage,
+  fullPage = false,
+}: ChatProps = {}) {
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const isOpen = externalIsOpen !== undefined ? externalIsOpen : internalIsOpen;
   const setIsOpen = externalSetIsOpen || setInternalIsOpen;
@@ -75,8 +83,6 @@ export default function Chat({ isOpen: externalIsOpen, setIsOpen: externalSetIsO
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatBoxRef = useRef<HTMLDivElement>(null);
-  const [hasProcessedInitial, setHasProcessedInitial] = useState(false);
-
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -85,22 +91,16 @@ export default function Chat({ isOpen: externalIsOpen, setIsOpen: externalSetIsO
     scrollToBottom();
   }, [messages]);
 
-  // Handle initial message
   useEffect(() => {
-    if (initialMessage && !hasProcessedInitial && isOpen) {
-      setInputValue(initialMessage);
-      setHasProcessedInitial(true);
-      // Auto-send the initial message after a brief delay
-      setTimeout(() => {
-        const form = chatBoxRef.current?.querySelector('form');
-        if (form) {
-          form.requestSubmit();
-        }
-      }, 500);
-    }
-  }, [initialMessage, hasProcessedInitial, isOpen]);
+    const msg = initialMessage?.trim();
+    if (!msg || !isOpen) return;
+    setInputValue(msg);
+    const t = window.setTimeout(() => {
+      chatBoxRef.current?.querySelector('form')?.requestSubmit();
+    }, 400);
+    return () => window.clearTimeout(t);
+  }, [initialMessage, isOpen]);
 
-  // Lock body scroll when chat is open on mobile
   useEffect(() => {
     if (isOpen && !fullPage) {
       document.body.style.overflow = 'hidden';
@@ -127,36 +127,35 @@ export default function Chat({ isOpen: externalIsOpen, setIsOpen: externalSetIsO
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!inputValue.trim()) return;
+    const userContent = inputValue.trim();
+    if (!userContent) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
-      text: inputValue,
+      text: userContent,
       sender: 'user',
       timestamp: new Date(),
       isAnimating: true,
     };
 
+    const llmMessageId = `${Date.now()}-assistant`;
+
     setMessages((prev) => [...prev, userMessage]);
     setInputValue('');
 
-    // Remove animation flag after animation completes
     setTimeout(() => {
       setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === userMessage.id ? { ...msg, isAnimating: false } : msg
-        )
+        prev.map((msg) => (msg.id === userMessage.id ? { ...msg, isAnimating: false } : msg))
       );
     }, 300);
 
     try {
-      // Convert messages to API format and include the new user message
       const apiMessages = [
         ...messages.map((m) => ({
           role: m.sender === 'user' ? 'user' : 'assistant',
           content: m.text,
         })),
-        { role: 'user', content: inputValue },
+        { role: 'user' as const, content: userContent },
       ];
 
       const res = await fetch('/api/chat/', {
@@ -164,126 +163,129 @@ export default function Chat({ isOpen: externalIsOpen, setIsOpen: externalSetIsO
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: apiMessages }),
       });
-      
-      // Handle streaming response
+
+      if (!res.ok) {
+        const errText = await parseErrorResponse(res);
+        throw new Error(errText);
+      }
+
       const reader = res.body?.getReader();
+      if (!reader) {
+        throw new Error('No response body from server.');
+      }
+
       const decoder = new TextDecoder();
-      let llmReply = "";
+      let llmReply = '';
 
       const llmMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        text: "",
-        sender: "llm",
+        id: llmMessageId,
+        text: '',
+        sender: 'llm',
         timestamp: new Date(),
         isAnimating: false,
       };
       setMessages((prev) => [...prev, llmMessage]);
 
       while (true) {
-        const { done, value } = await reader!.read();
+        const { done, value } = await reader.read();
         if (done) break;
         const chunk = decoder.decode(value, { stream: true });
         llmReply += chunk;
 
-        // Update live as tokens stream in
         setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === llmMessage.id ? { ...msg, text: llmReply } : msg
-          )
+          prev.map((msg) => (msg.id === llmMessageId ? { ...msg, text: llmReply } : msg))
         );
       }
     } catch (err) {
-      console.error("LLM Error:", err);
+      console.error('LLM Error:', err);
+      const detail = err instanceof Error ? err.message : 'Something went wrong.';
       const errorMsg: Message = {
         id: (Date.now() + 2).toString(),
-        text: "Sorry, something went wrong while fetching my response.",
-        sender: "llm",
+        text: `Sorry — ${detail}`,
+        sender: 'llm',
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, errorMsg]);
+      setMessages((prev) => {
+        const withoutEmptyAssistant = prev.filter((m) => m.id !== llmMessageId);
+        return [...withoutEmptyAssistant, errorMsg];
+      });
     }
   };
 
   return (
     <>
-      {/* Chat Button - hide in full page mode */}
       {!fullPage && (
         <button
           onClick={() => setIsOpen(true)}
-          className={`fixed bottom-4 right-4 md:bottom-6 md:right-6 z-50 transition-all duration-500 ease-out ${
-            isOpen ? 'opacity-0 scale-0 pointer-events-none' : 'opacity-100 scale-100'
+          className={`fixed bottom-4 right-4 z-50 transition-opacity duration-300 md:bottom-6 md:right-6 ${
+            isOpen ? 'pointer-events-none scale-0 opacity-0' : 'opacity-100'
           }`}
           aria-label="Open chat"
         >
-          <div className="relative group">
-            {/* Glassy button with strong backdrop blur and indigo tint */}
-            <div className="relative w-12 h-12 md:w-16 md:h-16 rounded-full bg-indigo-500/10 backdrop-blur-xl border border-indigo-400/40 hover:border-indigo-400/60 hover:scale-110 transition-all duration-300 flex items-center justify-center">
-              <MessageCircle className="w-5 h-5 md:w-7 md:h-7 text-indigo-400" strokeWidth={2} />
-            </div>
-          </div>
+          <span className="flex h-12 w-12 items-center justify-center border border-[var(--line)] bg-[color-mix(in_oklch,var(--bg-elevated)_90%,transparent)] text-[var(--fg)] backdrop-blur-sm transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)] md:h-14 md:w-14">
+            <MessageCircle className="h-5 w-5 md:h-6 md:w-6" strokeWidth={1.75} />
+          </span>
         </button>
       )}
 
-      {/* Chat Box */}
       <div
         ref={chatBoxRef}
-        className={`fixed z-50 transition-all duration-500 ease-in-out ${
+        className={`fixed z-50 transition-all duration-300 ease-out ${
           fullPage
-            ? 'opacity-100 scale-100 inset-0 w-full h-[100dvh]'
+            ? 'inset-0 h-[100dvh] w-full scale-100 opacity-100'
             : isOpen
-            ? 'opacity-100 scale-100 inset-0 md:inset-auto md:bottom-6 md:right-6 md:w-96 md:h-[32rem] w-full h-[100dvh]'
-            : 'opacity-0 scale-0 bottom-4 right-4 md:bottom-6 md:right-6 w-12 h-12 md:w-16 md:h-16 pointer-events-none'
+              ? 'inset-0 h-[100dvh] w-full scale-100 opacity-100 md:inset-auto md:bottom-6 md:right-6 md:h-[32rem] md:w-96'
+              : 'pointer-events-none bottom-4 right-4 h-12 w-12 scale-95 opacity-0 md:bottom-6 md:right-6 md:h-16 md:w-16'
         }`}
         style={{
           transformOrigin: fullPage ? 'center' : 'bottom right',
         }}
       >
-        <div className={`w-full h-full flex flex-col bg-black/80 backdrop-blur-xl border border-indigo-400/20 shadow-2xl shadow-indigo-500/20 ${fullPage ? 'rounded-none' : 'rounded-none md:rounded-2xl'}`}>
-          {/* Header */}
-          <div className="flex items-center justify-between px-6 py-5 border-b border-indigo-400/10 bg-black/40">
+        <div
+          className={`flex h-full w-full flex-col border border-[var(--line)] bg-[color-mix(in_oklch,var(--bg)_92%,transparent)] backdrop-blur-md ${
+            fullPage ? 'rounded-none' : 'rounded-none md:rounded-sm'
+          }`}
+        >
+          <div className="flex items-center justify-between border-b border-[var(--line)] px-5 py-4">
             <div className="flex items-center gap-3">
-              {/* Placeholder profile image - 10% smaller */}
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center text-white font-semibold text-xs">
+              <div className="flex h-8 w-8 items-center justify-center border border-[var(--line)] font-display text-xs font-medium text-[var(--fg)]">
                 PK
               </div>
-              <h3 className="text-base font-semibold text-white">Pranay Kakkar</h3>
+              <h3 className="text-sm font-medium text-[var(--fg)]">Pranay Kakkar</h3>
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="w-8 h-8 rounded-full bg-indigo-500/20 hover:bg-indigo-500/30 transition-colors flex items-center justify-center group"
+              className="flex h-8 w-8 items-center justify-center border border-transparent text-[var(--muted)] transition-colors hover:border-[var(--line)] hover:text-[var(--fg)]"
               aria-label="Close chat"
             >
-              <X className="w-5 h-5 text-indigo-400 group-hover:text-indigo-300" />
+              <X className="h-4 w-4" />
             </button>
           </div>
 
-          {/* Messages Area - increased padding all around */}
-          <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6 space-y-8 overscroll-contain">
+          <div className="flex-1 space-y-6 overflow-y-auto overscroll-contain px-4 py-6 md:px-6">
             {messages.length === 0 ? (
-              <div className="h-full flex items-center justify-center px-6">
-                <p className="text-gray-400 text-center text-sm leading-relaxed">
-                  Start a conversation with PranayAI!
+              <div className="flex h-full items-center justify-center px-4">
+                <p className="max-w-xs text-center text-sm leading-relaxed text-[var(--muted)]">
+                  Start a conversation with the assistant.
                 </p>
               </div>
             ) : (
               messages.map((message) => (
                 <div
                   key={message.id}
-                  className={`flex ${
-                    message.sender === 'user' ? 'justify-end' : 'justify-start'
-                  } ${message.isAnimating ? 'animate-messageSlideIn' : ''}`}
+                  className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'} ${
+                    message.isAnimating ? 'animate-messageSlideIn' : ''
+                  }`}
                 >
                   <div
-                    className={`max-w-[85%] md:max-w-[65%] shadow-md ${
+                    className={`max-w-[85%] shadow-sm md:max-w-[70%] ${
                       message.sender === 'user'
-                        ? 'bg-indigo-500 text-white rounded-[24px] rounded-br-md'
-                        : 'bg-gray-900/90 text-white rounded-[24px] rounded-bl-md'
+                        ? 'border border-[var(--line)] bg-[var(--accent-muted)] text-[var(--fg)]'
+                        : 'border border-[var(--line)] bg-[var(--bg-elevated)] text-[color-mix(in_oklch,var(--fg)_92%,var(--muted))]'
                     }`}
-                    style={{
-                      padding: '12px 16px',
-                    }}
+                    style={{ padding: '12px 16px' }}
                   >
-                    <p className="text-sm whitespace-pre-wrap break-words" style={{ lineHeight: '1.6' }}>
+                    <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
                       {renderMarkdownLinks(message.text)}
                     </p>
                   </div>
@@ -293,27 +295,26 @@ export default function Chat({ isOpen: externalIsOpen, setIsOpen: externalSetIsO
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input Area */}
           <form
             onSubmit={handleSendMessage}
-            className="flex-shrink-0 px-4 md:px-6 py-4 md:py-6 border-t border-indigo-400/10 bg-black/40"
+            className="flex-shrink-0 border-t border-[var(--line)] px-4 py-4 md:px-6"
             style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
           >
-            <div className="flex gap-2 md:gap-3 items-center">
+            <div className="flex items-center gap-2 md:gap-3">
               <input
                 type="text"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Ask me about my experiences..."
-                className="flex-1 px-4 md:px-6 py-3 md:py-4 text-sm bg-gray-900/50 rounded-full text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all"
+                placeholder="Ask me about my experiences…"
+                className="min-h-[44px] flex-1 border border-[var(--line)] bg-transparent px-4 text-sm text-[var(--fg)] placeholder:text-[var(--muted)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
               />
               <button
                 type="submit"
-                className="w-11 h-11 rounded-full bg-indigo-500 hover:bg-indigo-600 transition-all hover:scale-105 active:scale-95 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex-shrink-0 shadow-lg shadow-indigo-500/30"
+                className="flex h-11 w-11 flex-shrink-0 items-center justify-center border border-[var(--line)] text-[var(--fg)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-40"
                 disabled={!inputValue.trim()}
                 aria-label="Send message"
               >
-                <Send className="w-5 h-5 text-white" />
+                <Send className="h-4 w-4" />
               </button>
             </div>
           </form>
