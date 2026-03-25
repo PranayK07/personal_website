@@ -12,13 +12,15 @@ const SECTIONS = [
 export default function SectionRail({
   activeId,
   scrollProgress,
+  className = '',
 }: {
   activeId: string;
   scrollProgress: number;
+  className?: string;
 }) {
   return (
     <aside
-      className="pointer-events-none fixed left-0 top-[var(--site-header-h)] z-40 hidden h-[calc(100dvh-var(--site-header-h))] w-[var(--rail-width)] lg:block"
+      className={`pointer-events-none fixed left-0 top-[var(--site-header-h)] z-40 hidden h-[calc(100dvh-var(--site-header-h))] w-[var(--rail-width)] lg:block ${className}`}
       aria-hidden="true"
     >
       <div className="pointer-events-auto relative flex h-full flex-col items-center pt-8 pb-12">

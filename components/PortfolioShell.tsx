@@ -3,10 +3,12 @@
 import { useEffect, useState, useCallback, type ReactNode } from 'react';
 import SiteHeader from '@/components/SiteHeader';
 import SectionRail from '@/components/SectionRail';
+import { useSiteReveal } from '@/components/SiteRevealContext';
 
 const SECTION_IDS = ['home', 'chat', 'work', 'stack', 'projects', 'contact'] as const;
 
 export default function PortfolioShell({ children }: { children: ReactNode }) {
+  const { revealed } = useSiteReveal();
   const [activeId, setActiveId] = useState<string>('home');
   const [scrollProgress, setScrollProgress] = useState(0);
 
@@ -39,11 +41,19 @@ export default function PortfolioShell({ children }: { children: ReactNode }) {
     };
   }, [updateScroll]);
 
+  useEffect(() => {
+    if (revealed) updateScroll();
+  }, [revealed, updateScroll]);
+
   return (
     <>
-      <SiteHeader activeId={activeId} />
-      <SectionRail activeId={activeId} scrollProgress={scrollProgress} />
-      <div className="lg:pl-[var(--rail-width)]">{children}</div>
+      {revealed && (
+        <>
+          <SiteHeader activeId={activeId} className="site-chrome-enter" />
+          <SectionRail activeId={activeId} scrollProgress={scrollProgress} className="site-chrome-enter" />
+        </>
+      )}
+      <div className={revealed ? 'lg:pl-[var(--rail-width)]' : undefined}>{children}</div>
     </>
   );
 }

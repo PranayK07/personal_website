@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSiteReveal } from '@/components/SiteRevealContext';
 
 export default function Footer() {
+  const { revealed } = useSiteReveal();
   const [time, setTime] = useState<string>('');
 
   useEffect(() => {
@@ -23,6 +25,8 @@ export default function Footer() {
 
     return () => clearInterval(interval);
   }, []);
+
+  if (!revealed) return null;
 
   return (
     <footer className="border-t border-[var(--line)]">

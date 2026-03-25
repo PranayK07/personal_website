@@ -13,12 +13,18 @@ const NAV = [
   { id: 'contact', label: 'Contact', href: '#contact' },
 ] as const;
 
-export default function SiteHeader({ activeId }: { activeId: string }) {
+export default function SiteHeader({
+  activeId,
+  className = '',
+}: {
+  activeId: string;
+  className?: string;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
     <header
-      className="fixed top-0 left-0 right-0 z-50 border-b border-[var(--line)]/80 bg-[color-mix(in_oklch,var(--bg)_88%,transparent)] backdrop-blur-md"
+      className={`fixed top-0 left-0 right-0 z-50 border-b border-[var(--line)]/80 bg-[color-mix(in_oklch,var(--bg)_88%,transparent)] backdrop-blur-md ${className}`}
       style={{ height: 'var(--site-header-h)' }}
     >
       <div className="mx-auto flex h-full max-w-[var(--content-max)] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">

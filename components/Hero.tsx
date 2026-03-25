@@ -1,4 +1,28 @@
+'use client';
+
+import { useSiteReveal } from '@/components/SiteRevealContext';
+
 export default function Hero() {
+  const { revealed } = useSiteReveal();
+
+  if (!revealed) {
+    return (
+      <section
+        id="home"
+        className="relative flex min-h-[100dvh] flex-col items-center justify-center px-4 text-center"
+        aria-label="Introduction"
+      >
+        <p className="sr-only">Scroll, click, or press a key to explore the rest of the site.</p>
+        <div>
+          <h1 className="font-display text-[clamp(2.25rem,7vw,4rem)] font-medium leading-[1.05] tracking-[-0.02em] text-[var(--fg)]">
+            Pranay Kakkar
+          </h1>
+          <p className="mt-5 text-[clamp(1rem,2.5vw,1.25rem)] text-[var(--muted)]">CS @ UConn</p>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section
       id="home"
@@ -8,16 +32,14 @@ export default function Hero() {
         minHeight: 'min(92dvh, 900px)',
       }}
     >
-      <div className="mx-auto max-w-[var(--content-max)]">
+      <div className="mx-auto max-w-[var(--content-max)] hero-reveal-enter">
         <p className="mb-4 text-[0.7rem] font-medium uppercase tracking-[0.28em] text-[var(--muted)]">
           Portfolio · Computer Science
         </p>
         <h1 className="font-display text-[clamp(2.5rem,6vw,4.25rem)] font-medium leading-[1.05] tracking-[-0.02em] text-[var(--fg)]">
           Pranay Kakkar
         </h1>
-        <p className="mt-4 max-w-[42ch] text-[clamp(1.05rem,2vw,1.2rem)] text-[var(--muted)]">
-          CS @ UConn
-        </p>
+        <p className="mt-4 max-w-[42ch] text-[clamp(1.05rem,2vw,1.2rem)] text-[var(--muted)]">CS @ UConn</p>
         <div className="mt-10 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-[var(--muted)]">
           <span className="inline-flex items-center gap-2">
             <span className="h-px w-8 bg-[var(--line)]" aria-hidden />

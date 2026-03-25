@@ -54,7 +54,12 @@ body {
   color: var(--fg);
 }
 
+/* Offset anchor jumps only after header chrome is shown */
 section[id] {
+  scroll-margin-top: 0;
+}
+
+html[data-site-revealed="true"] section[id] {
   scroll-margin-top: calc(var(--site-header-h) + 0.75rem);
 }
 
@@ -107,6 +112,44 @@ section[id] {
 }
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+/* Landing reveal: minimal hero → full site */
+@keyframes heroRevealContent {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes siteChromeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-reveal-enter {
+  animation: heroRevealContent 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.site-chrome-enter {
+  animation: siteChromeIn 0.45s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-reveal-enter,
+  .site-chrome-enter {
+    animation: none;
+  }
 }
 
 /* Thin themed scrollbar (body) */
