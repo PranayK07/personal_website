@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { completeJson } from '@/lib/resume-advisor/groq';
+import { completeJsonWithMeta, getConfiguredLLM } from '@/lib/resume-advisor/groq';
 import {
   AggressivenessMode,
   EvidenceMap,
@@ -7,6 +7,8 @@ import {
   GeneratePreviewResponse,
   ItemReason,
   JobDescriptionAnalysis,
+  LLMConfig,
+  LLMUsage,
   MergedProfile,
   SelectionState,
   StyleProfile,
@@ -16,7 +18,7 @@ import {
   TailoredResume,
 } from '@/lib/resume-advisor/types';
 import { tokenize, uniq } from '@/lib/resume-advisor/pipeline/text';
-import { buildJDContextPacket, buildCandidateContextPacket, buildMatchContextPacket } from '@/lib/resume-advisor/pipeline/context-packets';
+import { buildJDContextPacket } from '@/lib/resume-advisor/pipeline/context-packets';
 
 const rewriteSchema = z.object({
   experiences: z.array(z.object({
@@ -51,6 +53,53 @@ function escapeHtml(value: string): string {
     .replace(/'/g, '&#39;');
 }
 
+const MAX_SELECTED_EXPERIENCE = 3;
+const MAX_SELECTED_PROJECTS = 3;
+const MAX_SELECTED_TOTAL = 5;
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function normalizeWhitespace(value: string): string {
+  return value.replace(/\s+/g, ' ').trim();
+}
+
+function dedupeOrdered(values: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+
+  for (const value of values) {
+    const key = normalizeWhitespace(value).toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(normalizeWhitespace(value));
+  }
+
+  return out;
+}
+
+function bulletLengthTarget(mode: AggressivenessMode, styleProfile: StyleProfile | null): { target: number; min: number; max: number } {
+  const profileTarget = styleProfile?.averageBulletLength;
+
+  const defaultTarget = mode === 'aggressive_ats'
+    ? 180
+    : mode === 'conservative'
+      ? 145
+      : 165;
+
+  const target = clamp(profileTarget || defaultTarget, 115, 220);
+  return {
+    target,
+    min: clamp(Math.round(target * 0.7), 85, 170),
+    max: clamp(Math.round(target * 1.15), 130, 240),
+  };
+}
+
 function truncateBullet(bullet: string, maxChars: number): string {
   if (bullet.length <= maxChars) {
     return bullet;
@@ -67,23 +116,77 @@ function truncateBullet(bullet: string, maxChars: number): string {
   return `${slice.trimEnd()}…`;
 }
 
-function maxCharsForMode(mode: AggressivenessMode): number {
+function sanitizeBulletText(
+  bullet: string,
+  context: { title?: string; company?: string; role?: string },
+  maxChars: number,
+): string {
+  let text = normalizeWhitespace(bullet.replace(/^[-*•]\s*/, ''));
+  if (!text) return '';
+
+  const titleParts = [context.title, context.company, context.role]
+    .filter(Boolean)
+    .map((part) => normalizeWhitespace(String(part)))
+    .filter((part) => part.length >= 3);
+
+  for (const part of titleParts) {
+    const prefixPattern = new RegExp(`^${escapeRegExp(part)}\\s*[:|\\-]\\s*`, 'i');
+    text = text.replace(prefixPattern, '');
+  }
+
+  text = text.replace(/\b(\w+)(\s+\1\b){1,}/gi, '$1');
+  text = normalizeWhitespace(text);
+
+  if (/^i\s+/i.test(text)) {
+    text = text.replace(/^i\s+/i, '');
+  }
+
+  if (!/[.!?]$/.test(text)) {
+    text = `${text}.`;
+  }
+
+  return truncateBullet(text, maxChars);
+}
+
+function cleanBulletCollection(
+  bullets: string[],
+  context: { title?: string; company?: string; role?: string },
+  maxChars: number,
+): string[] {
+  const cleaned = dedupeOrdered(
+    bullets
+      .map((bullet) => sanitizeBulletText(bullet, context, maxChars))
+      .filter((bullet) => bullet.length > 0),
+  );
+
+  return cleaned;
+}
+
+function maxCharsForMode(mode: AggressivenessMode, styleProfile: StyleProfile | null): number {
+  const target = bulletLengthTarget(mode, styleProfile).target;
+
   if (mode === 'conservative') {
-    return 165;
+    return clamp(target, 140, 185);
   }
 
   if (mode === 'aggressive_ats') {
-    return 200;
+    return clamp(target + 15, 165, 230);
   }
 
-  return 180;
+  return clamp(target + 10, 155, 215);
 }
 
-function enforceOnePageBudget(resume: TailoredResume, mode: AggressivenessMode): TailoredResume {
+function enforceOnePageBudget(resume: TailoredResume, mode: AggressivenessMode, styleProfile: StyleProfile | null): TailoredResume {
   // These caps are the primary one-page control knobs for PDF fidelity.
-  const maxChars = maxCharsForMode(mode);
-  const maxExperienceBullets = mode === 'aggressive_ats' ? 4 : 3;
-  const maxProjectBullets = mode === 'aggressive_ats' ? 3 : 2;
+  const maxChars = maxCharsForMode(mode, styleProfile);
+  const totalItems = resume.experience.length + resume.projects.length;
+  const denseLayout = totalItems <= MAX_SELECTED_TOTAL;
+  const maxExperienceBullets = denseLayout
+    ? (mode === 'conservative' ? 3 : 4)
+    : (mode === 'aggressive_ats' ? 4 : 3);
+  const maxProjectBullets = denseLayout
+    ? (mode === 'conservative' ? 2 : 3)
+    : (mode === 'aggressive_ats' ? 3 : 2);
 
   const experience = resume.experience.map((item) => ({
     ...item,
@@ -111,23 +214,25 @@ function manualRewrite(
   keywords: string[],
   mode: AggressivenessMode,
 ): string[] {
+  const maxChars = maxCharsForMode(mode, null);
   const selectedKeywords = keywords.slice(0, mode === 'aggressive_ats' ? 3 : 2);
 
   return bullets.slice(0, mode === 'aggressive_ats' ? 4 : 3).map((bullet, index) => {
+    const base = sanitizeBulletText(bullet, {}, maxChars);
     const keyword = selectedKeywords[index % Math.max(1, selectedKeywords.length)] || '';
     if (!keyword) {
-      return bullet;
+      return base;
     }
 
-    if (bullet.toLowerCase().includes(keyword.toLowerCase())) {
-      return bullet;
+    if (base.toLowerCase().includes(keyword.toLowerCase())) {
+      return base;
     }
 
     if (mode === 'conservative') {
-      return `${bullet} (${keyword})`;
+      return sanitizeBulletText(`${base.replace(/[.]$/, '')} (${keyword}).`, {}, maxChars);
     }
 
-    return `${bullet} leveraging ${keyword}`;
+    return sanitizeBulletText(`${base.replace(/[.]$/, '')} using ${keyword}.`, {}, maxChars);
   });
 }
 
@@ -151,7 +256,13 @@ Critical rules:
 - Preserve plausibility and chronology. Do not invent experiences or impossible claims.
 - Incorporate high-value JD terms naturally; avoid keyword stuffing.
 - Follow the candidate's style profile when provided (bullet length, tense, tone).
-- Keep bullets concise and one-page friendly. Prefer strong verbs and measurable outcomes.
+- Enforce proven resume bullet structure quality:
+  1) Action + context/scope + measurable result whenever possible.
+  2) Use quantification when supported (percent, latency, throughput, cost, users, revenue, defects, cycle time).
+  3) Keep each bullet in an ATS-readable 1-2 line equivalent range and avoid filler.
+  4) Use past tense for completed work and avoid first-person pronouns.
+  5) Avoid duplicate or repeated phrases, especially repeating project/job titles inside bullets.
+- For each selected experience/project item, produce high-detail bullets (target 3-4 bullets per item unless source content is sparse).
 - Return strict JSON only. Output shape: { experiences: [{ id, bullets: string[] }], projects: [{ id, bullets: string[] }], riskyUnsupportedAdditions: [{ text, reason }] }.
 - In riskyUnsupportedAdditions list any phrase you added that is not directly supported by the original bullet or profile.`;
 
@@ -162,7 +273,8 @@ async function rewriteSelectedBullets(
   aggressiveness: AggressivenessMode,
   styleProfile: StyleProfile | null,
   jdPacket: ReturnType<typeof buildJDContextPacket>,
-): Promise<z.infer<typeof rewriteSchema>> {
+  llmConfig?: LLMConfig | null,
+): Promise<{ rewritten: z.infer<typeof rewriteSchema>; llmUsage: LLMUsage }> {
   const keywordFocus = uniq([
     ...(jdAnalysis.topAtsTerms || jdAnalysis.atsKeywords.map((item) => item.keyword)),
     ...jdAnalysis.mustHaveSkills,
@@ -176,6 +288,8 @@ async function rewriteSelectedBullets(
       ? 'Conservative (minimal reframing).'
       : 'Balanced (strategic but plausible).';
 
+  const bulletGuide = bulletLengthTarget(aggressiveness, styleProfile);
+
   const user = JSON.stringify({
     aggressiveness: aggressivenessLabel,
     keywordFocus,
@@ -186,16 +300,27 @@ async function rewriteSelectedBullets(
       tense: styleProfile.tenseUsage,
       tone: styleProfile.tone,
     } : undefined,
+    bulletLengthGuide: {
+      targetChars: bulletGuide.target,
+      minChars: bulletGuide.min,
+      maxChars: bulletGuide.max,
+      lineGuidance: 'Approximate one to two lines in resume layout.',
+    },
     experience: experience.map((e) => ({
       id: e.id,
       title: e.title,
       company: e.company,
+      source: e.provenance.source,
+      technologies: e.technologies,
       bullets: e.bullets.map((b) => b.text),
     })),
     projects: projects.map((p) => ({
       id: p.id,
       title: p.title,
       role: p.role,
+      company: p.company,
+      source: p.provenance.source,
+      technologies: p.technologies,
       bullets: p.bullets.map((b) => b.text),
     })),
     outputShape: {
@@ -203,15 +328,25 @@ async function rewriteSelectedBullets(
       projects: [{ id: 'string', bullets: ['string'] }],
       riskyUnsupportedAdditions: [{ text: 'string', reason: 'string' }],
     },
-    reminder: 'Each bullet must be one full sentence ending with a period. Do not truncate any bullet.',
+    reminder: 'Each bullet must be a complete sentence, avoid title repetition, preserve detail, and end with a period.',
   });
 
-  return rewriteSchema.parse(await completeJson({
+  const { data, meta } = await completeJsonWithMeta<z.infer<typeof rewriteSchema>>({
     system: BULLET_REWRITER_SYSTEM,
     user,
     temperature: 0.3,
     maxTokens: 2400,
-  }));
+  }, llmConfig);
+
+  return {
+    rewritten: rewriteSchema.parse(data),
+    llmUsage: {
+      provider: meta.provider,
+      model: meta.model,
+      stage: 'bulletRewrite',
+      source: 'llm',
+    },
+  };
 }
 
 function buildReasons(
@@ -234,12 +369,20 @@ function buildReasons(
     const text = `${exp.title} ${exp.company} ${exp.bullets.map((b) => b.text).join(' ')}`;
     const matched = scoreKeywordCoverage(text, keywords);
     const matchList = ev ? [...ev.matchedRequiredSkills, ...ev.matchedPreferredSkills] : matched;
+    const sourceNote = exp.provenance.source === 'uploaded_resume'
+      ? 'directly supported by uploaded resume'
+      : exp.provenance.source === 'manual_input'
+        ? 'supported by manual resume context'
+        : 'supported by website profile';
+    const topMatches = matchList.slice(0, 3);
 
     reasons.push({
       itemId: exp.id,
       itemType: 'experience',
       reasonLabel: (matchList.length >= 4 ? 'high overlap' : matchList.length >= 2 ? 'role-aligned' : 'transferable'),
-      explanation: matchList.length > 0 ? `Include: ${matchList.slice(0, 3).join(', ')}` : 'Transferable',
+      explanation: topMatches.length > 0
+        ? `${sourceNote}; matches ${topMatches.join(', ')}; selected for role-fit and one-page detail density.`
+        : `${sourceNote}; selected as adjacent transferable evidence for the target role.`,
     });
   }
 
@@ -248,12 +391,20 @@ function buildReasons(
     const text = `${proj.title} ${proj.bullets.map((b) => b.text).join(' ')}`;
     const matched = scoreKeywordCoverage(text, keywords);
     const matchList = ev ? [...ev.matchedRequiredSkills, ...ev.matchedPreferredSkills] : matched;
+    const sourceNote = proj.provenance.source === 'uploaded_resume'
+      ? 'directly supported by uploaded resume'
+      : proj.provenance.source === 'manual_input'
+        ? 'supported by manual resume context'
+        : 'supported by website profile';
+    const topMatches = matchList.slice(0, 3);
 
     reasons.push({
       itemId: proj.id,
       itemType: 'project',
       reasonLabel: matchList.length >= 3 ? 'high overlap' : 'relevant',
-      explanation: matchList.length > 0 ? `Include: ${matchList.slice(0, 3).join(', ')}` : 'Relevant',
+      explanation: topMatches.length > 0
+        ? `${sourceNote}; matches ${topMatches.join(', ')}; selected to strengthen direct JD keyword coverage.`
+        : `${sourceNote}; selected as high-signal project context for transferable requirements.`,
     });
   }
 
@@ -316,6 +467,22 @@ function buildAnalysis(
   };
 }
 
+function dedupeHeaderSegments(segments: Array<string | undefined>): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
+
+  for (const segment of segments) {
+    const clean = normalizeWhitespace(segment || '');
+    if (!clean) continue;
+    const normalized = clean.toLowerCase();
+    if (seen.has(normalized)) continue;
+    seen.add(normalized);
+    out.push(clean);
+  }
+
+  return out;
+}
+
 export function renderResumePreviewHtml(resume: TailoredResume): string {
   const educationHtml = resume.education.map((item) => {
     const coursework = item.coursework && item.coursework.length > 0
@@ -356,11 +523,11 @@ export function renderResumePreviewHtml(resume: TailoredResume): string {
   `).join('');
 
   const projectsHtml = resume.projects.map((item) => {
-    const companySuffix = item.company ? ` | ${item.company}` : '';
+    const headerSegments = dedupeHeaderSegments([item.title, item.role, item.company]);
     return `
       <article class="entry">
         <div class="entry-row sub">
-          <p><strong>${escapeHtml(item.title)}</strong> | ${escapeHtml(item.role)}${escapeHtml(companySuffix)}</p>
+          <p><strong>${escapeHtml(headerSegments[0] || item.title)}</strong>${headerSegments.slice(1).map((part) => ` | ${escapeHtml(part)}`).join('')}</p>
           <span class="date">${escapeHtml(item.date)}</span>
         </div>
         <ul>
@@ -536,19 +703,83 @@ function ensureImmutableFields(mergedProfile: MergedProfile, resume: TailoredRes
   };
 }
 
+function enforceSelectionCaps(
+  selectionState: SelectionState,
+  mergedProfile: MergedProfile,
+): { experienceIds: string[]; projectIds: string[] } {
+  const experiencePool = mergedProfile.experience.map((item) => item.id);
+  const projectPool = mergedProfile.projects.map((item) => item.id);
+
+  const strictMix = experiencePool.length >= 2 && projectPool.length >= 2;
+  const maxExp = strictMix ? MAX_SELECTED_EXPERIENCE : MAX_SELECTED_TOTAL;
+  const maxProj = strictMix ? MAX_SELECTED_PROJECTS : MAX_SELECTED_TOTAL;
+
+  const experienceIds = dedupeOrdered(selectionState.selectedExperienceIds)
+    .filter((id) => experiencePool.includes(id))
+    .slice(0, maxExp);
+
+  const projectIds = dedupeOrdered(selectionState.selectedProjectIds)
+    .filter((id) => projectPool.includes(id))
+    .slice(0, maxProj);
+
+  if (strictMix) {
+    for (const id of experiencePool) {
+      if (experienceIds.length >= 2) break;
+      if (!experienceIds.includes(id)) experienceIds.push(id);
+    }
+    for (const id of projectPool) {
+      if (projectIds.length >= 2) break;
+      if (!projectIds.includes(id)) projectIds.push(id);
+    }
+  }
+
+  while ((experienceIds.length + projectIds.length) > MAX_SELECTED_TOTAL) {
+    if (experienceIds.length > projectIds.length && experienceIds.length > (strictMix ? 2 : 1)) {
+      experienceIds.pop();
+      continue;
+    }
+    if (projectIds.length > (strictMix ? 2 : 1)) {
+      projectIds.pop();
+      continue;
+    }
+    break;
+  }
+
+  const remaining = MAX_SELECTED_TOTAL - (experienceIds.length + projectIds.length);
+  if (remaining > 0) {
+    const candidates = [
+      ...experiencePool.filter((id) => !experienceIds.includes(id)).map((id) => ({ id, type: 'experience' as const })),
+      ...projectPool.filter((id) => !projectIds.includes(id)).map((id) => ({ id, type: 'project' as const })),
+    ];
+
+    for (const candidate of candidates) {
+      if ((experienceIds.length + projectIds.length) >= MAX_SELECTED_TOTAL) break;
+      if (candidate.type === 'experience' && experienceIds.length < maxExp) {
+        experienceIds.push(candidate.id);
+      }
+      if (candidate.type === 'project' && projectIds.length < maxProj) {
+        projectIds.push(candidate.id);
+      }
+    }
+  }
+
+  return { experienceIds, projectIds };
+}
+
 export async function generateTailoredPreview(
   mergedProfile: MergedProfile,
   selectionState: SelectionState,
   jdAnalysis: JobDescriptionAnalysis,
-  options?: { styleProfile?: StyleProfile | null; evidenceMap?: EvidenceMap | null },
+  options?: { styleProfile?: StyleProfile | null; evidenceMap?: EvidenceMap | null; llmConfig?: LLMConfig | null },
 ): Promise<GeneratePreviewResponse> {
+  const configuredLLM = getConfiguredLLM(options?.llmConfig);
   const styleProfile = options?.styleProfile ?? null;
   const evidenceMap = options?.evidenceMap ?? null;
   const jdPacket = buildJDContextPacket(jdAnalysis);
+  const cappedSelection = enforceSelectionCaps(selectionState, mergedProfile);
 
   const selectedExperiences = mergedProfile.experience
-    .filter((item) => selectionState.selectedExperienceIds.includes(item.id))
-    .slice(0, 4)
+    .filter((item) => cappedSelection.experienceIds.includes(item.id))
     .map<TailoredExperienceItem>((item) => ({
       id: item.id,
       title: item.title,
@@ -565,8 +796,7 @@ export async function generateTailoredPreview(
     }));
 
   const selectedProjects = mergedProfile.projects
-    .filter((item) => selectionState.selectedProjectIds.includes(item.id))
-    .slice(0, 3)
+    .filter((item) => cappedSelection.projectIds.includes(item.id))
     .map<TailoredProjectItem>((item) => ({
       id: item.id,
       title: item.title,
@@ -583,13 +813,21 @@ export async function generateTailoredPreview(
       provenance: item.provenance,
     }));
 
-  const selectedSkills = mergedProfile.skills.map((group) => ({
-    ...group,
-    skills: group.skills.filter((skill) => {
-      return selectionState.selectedSkillNames.includes(skill)
-        || group.skills.length <= 5;
-    }),
-  })).filter((group) => group.skills.length > 0);
+  const selectedSkillSet = new Set(selectionState.selectedSkillNames.map((skill) => normalizeWhitespace(skill).toLowerCase()));
+
+  let selectedSkills = mergedProfile.skills
+    .map((group) => ({
+      ...group,
+      skills: group.skills.filter((skill) => selectedSkillSet.has(normalizeWhitespace(skill).toLowerCase())),
+    }))
+    .filter((group) => group.skills.length > 0);
+
+  if (selectedSkills.length === 0) {
+    selectedSkills = mergedProfile.skills
+      .map((group) => ({ ...group, skills: group.skills.slice(0, 8) }))
+      .filter((group) => group.skills.length > 0)
+      .slice(0, 2);
+  }
 
   const keywordFocus = uniq([
     ...(jdAnalysis.topAtsTerms || jdAnalysis.atsKeywords.map((item) => item.keyword)),
@@ -599,25 +837,59 @@ export async function generateTailoredPreview(
   ]).filter((k) => k.length >= 2).slice(0, 24);
 
   let riskyUnsupportedAdditions: GenerationAnalysis['riskyUnsupportedAdditions'] = [];
+  let bulletRewriteUsage: LLMUsage = {
+    provider: configuredLLM.provider,
+    model: configuredLLM.model,
+    stage: 'bulletRewrite',
+    source: 'fallback',
+    note: 'Heuristic bullet rewriting was used because LLM rewrite was unavailable.',
+  };
+
+  const maxBulletChars = maxCharsForMode(selectionState.aggressiveness, styleProfile);
+  const minExperienceBullets = selectionState.aggressiveness === 'conservative' ? 2 : 3;
+  const minProjectBullets = selectionState.aggressiveness === 'conservative' ? 2 : 3;
 
   try {
-    const rewritten = await rewriteSelectedBullets(
+    const rewrittenResult = await rewriteSelectedBullets(
       selectedExperiences,
       selectedProjects,
       jdAnalysis,
       selectionState.aggressiveness,
       styleProfile,
       jdPacket,
+      options?.llmConfig,
     );
+    const rewritten = rewrittenResult.rewritten;
+    bulletRewriteUsage = rewrittenResult.llmUsage;
 
     riskyUnsupportedAdditions = rewritten.riskyUnsupportedAdditions;
 
     for (const exp of selectedExperiences) {
       const rewrite = rewritten.experiences.find((item) => item.id === exp.id);
-      if (!rewrite) continue;
-
       const support = exp.bullets[0]?.support || 'website_only';
-      exp.bullets = rewrite.bullets.slice(0, 4).map((bullet) => {
+      const originalTexts = exp.bullets.map((bullet) => bullet.text);
+      const rewrittenTexts = rewrite?.bullets || [];
+      const cleaned = cleanBulletCollection(
+        [...rewrittenTexts, ...originalTexts],
+        { title: exp.title, company: exp.company },
+        maxBulletChars,
+      );
+      const finalTexts = cleaned.slice(0, 4);
+
+      while (finalTexts.length < minExperienceBullets && originalTexts.length > finalTexts.length) {
+        const candidate = sanitizeBulletText(
+          originalTexts[finalTexts.length],
+          { title: exp.title, company: exp.company },
+          maxBulletChars,
+        );
+        if (candidate && !finalTexts.includes(candidate)) {
+          finalTexts.push(candidate);
+        } else {
+          break;
+        }
+      }
+
+      exp.bullets = finalTexts.map((bullet) => {
         const matched = scoreKeywordCoverage(bullet, keywordFocus);
         const riskLevel = matched.length >= 3 ? 'low' : matched.length >= 1 ? 'medium' : 'high';
         return {
@@ -640,10 +912,30 @@ export async function generateTailoredPreview(
 
     for (const project of selectedProjects) {
       const rewrite = rewritten.projects.find((item) => item.id === project.id);
-      if (!rewrite) continue;
-
       const support = project.bullets[0]?.support || 'website_only';
-      project.bullets = rewrite.bullets.slice(0, 3).map((bullet) => {
+      const originalTexts = project.bullets.map((bullet) => bullet.text);
+      const rewrittenTexts = rewrite?.bullets || [];
+      const cleaned = cleanBulletCollection(
+        [...rewrittenTexts, ...originalTexts],
+        { title: project.title, company: project.company, role: project.role },
+        maxBulletChars,
+      );
+      const finalTexts = cleaned.slice(0, 3);
+
+      while (finalTexts.length < minProjectBullets && originalTexts.length > finalTexts.length) {
+        const candidate = sanitizeBulletText(
+          originalTexts[finalTexts.length],
+          { title: project.title, company: project.company, role: project.role },
+          maxBulletChars,
+        );
+        if (candidate && !finalTexts.includes(candidate)) {
+          finalTexts.push(candidate);
+        } else {
+          break;
+        }
+      }
+
+      project.bullets = finalTexts.map((bullet) => {
         const matched = scoreKeywordCoverage(bullet, keywordFocus);
         const riskLevel = matched.length >= 2 ? 'low' : matched.length >= 1 ? 'medium' : 'high';
         return {
@@ -665,11 +957,18 @@ export async function generateTailoredPreview(
     }
   } catch {
     for (const exp of selectedExperiences) {
-      exp.bullets = manualRewrite(
+      const fallbackTexts = manualRewrite(
         exp.bullets.map((bullet) => bullet.text),
         keywordFocus,
         selectionState.aggressiveness,
-      ).map((text) => ({
+      );
+      const cleaned = cleanBulletCollection(
+        fallbackTexts,
+        { title: exp.title, company: exp.company },
+        maxBulletChars,
+      ).slice(0, 4);
+
+      exp.bullets = cleaned.map((text) => ({
         text,
         provenance: exp.provenance,
         support: exp.bullets[0]?.support || 'website_only',
@@ -677,11 +976,18 @@ export async function generateTailoredPreview(
     }
 
     for (const project of selectedProjects) {
-      project.bullets = manualRewrite(
+      const fallbackTexts = manualRewrite(
         project.bullets.map((bullet) => bullet.text),
         keywordFocus,
         selectionState.aggressiveness,
-      ).map((text) => ({
+      );
+      const cleaned = cleanBulletCollection(
+        fallbackTexts,
+        { title: project.title, company: project.company, role: project.role },
+        maxBulletChars,
+      ).slice(0, 3);
+
+      project.bullets = cleaned.map((text) => ({
         text,
         provenance: project.provenance,
         support: project.bullets[0]?.support || 'website_only',
@@ -698,7 +1004,7 @@ export async function generateTailoredPreview(
   };
 
   tailoredResume = ensureImmutableFields(mergedProfile, tailoredResume);
-  tailoredResume = enforceOnePageBudget(tailoredResume, selectionState.aggressiveness);
+  tailoredResume = enforceOnePageBudget(tailoredResume, selectionState.aggressiveness, styleProfile);
 
   const reasons = buildReasons(tailoredResume, jdAnalysis, evidenceMap ?? undefined);
   const analysis = buildAnalysis(tailoredResume, jdAnalysis, reasons, riskyUnsupportedAdditions, evidenceMap ?? undefined);
@@ -707,5 +1013,8 @@ export async function generateTailoredPreview(
     tailoredResume,
     generationAnalysis: analysis,
     previewHtml: renderResumePreviewHtml(tailoredResume),
+    llmUsage: {
+      bulletRewrite: bulletRewriteUsage,
+    },
   };
 }

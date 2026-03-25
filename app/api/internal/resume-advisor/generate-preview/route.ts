@@ -9,11 +9,12 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { jdAnalysis, mergedProfile, selectionState, styleProfile, evidenceMap } = generatePreviewSchema.parse(body);
+    const { jdAnalysis, mergedProfile, selectionState, styleProfile, evidenceMap, llmConfig } = generatePreviewSchema.parse(body);
 
     const response = await generateTailoredPreview(mergedProfile, selectionState, jdAnalysis, {
       styleProfile: styleProfile ?? null,
       evidenceMap: evidenceMap ?? null,
+      llmConfig: llmConfig ?? null,
     });
 
     return NextResponse.json(response);

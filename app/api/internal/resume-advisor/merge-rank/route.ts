@@ -10,9 +10,11 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { jdAnalysis, resumeParseResult } = mergeRankSchema.parse(body);
+    const { jdAnalysis, resumeParseResult, llmConfig } = mergeRankSchema.parse(body);
 
-    const response = await buildMergeRankResponse(profileData, resumeParseResult, jdAnalysis);
+    const response = await buildMergeRankResponse(profileData, resumeParseResult, jdAnalysis, {
+      llmConfig: llmConfig ?? null,
+    });
 
     return NextResponse.json(response);
   } catch (error) {

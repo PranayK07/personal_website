@@ -9,8 +9,8 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { rawText } = resumeParseSchema.parse(body);
-    const result = parseResumeText(rawText);
+    const { rawText, source } = resumeParseSchema.parse(body);
+    const result = parseResumeText(rawText, source ?? 'uploaded_resume');
 
     return NextResponse.json({ result });
   } catch (error) {

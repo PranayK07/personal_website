@@ -9,8 +9,8 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { jdText } = jdAnalyzeSchema.parse(body);
-    const analysis = await analyzeJobDescription(jdText);
+    const { jdText, llmConfig } = jdAnalyzeSchema.parse(body);
+    const analysis = await analyzeJobDescription(jdText, llmConfig ?? null);
 
     return NextResponse.json({ analysis });
   } catch (error) {

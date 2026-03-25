@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { completeJson } from '@/lib/resume-advisor/groq';
-import { StyleProfile } from '@/lib/resume-advisor/types';
+import { completeJsonWithMeta, getConfiguredLLM } from '@/lib/resume-advisor/groq';
+import { LLMConfig, LLMUsage, StyleProfile } from '@/lib/resume-advisor/types';
 import { normalizeText } from '@/lib/resume-advisor/pipeline/text';
 
 const styleProfileSchema = z.object({
@@ -31,7 +31,18 @@ function computeBulletStats(text: string): { avgLen: number; count: number } {
  * Extract a writing-style fingerprint from resume text (and optionally merged profile).
  * Used during rewrite to keep bullets consistent with the candidate's voice.
  */
-export async function extractStyleProfile(resumeOrProfileText: string): Promise<StyleProfile> {
+export async function extractStyleProfile(
+  resumeOrProfileText: string,
+  llmConfig?: LLMConfig | null,
+): Promise<StyleProfile> {
+  const configured = getConfiguredLLM(llmConfig);
+  const fallbackUsage: LLMUsage = {
+    provider: configured.provider,
+    model: configured.model,
+    stage: 'styleProfile',
+    source: 'fallback',
+  };
+
   const clean = normalizeText(resumeOrProfileText).slice(0, 8000);
   const { avgLen, count } = computeBulletStats(clean);
 
@@ -42,18 +53,22 @@ export async function extractStyleProfile(resumeOrProfileText: string): Promise<
       metricDensity: 'medium',
       tone: 'technical',
       compressionLevel: 'medium',
+      llmUsage: {
+        ...fallbackUsage,
+        note: 'Insufficient bullet signal for LLM style profiling; used heuristic defaults.',
+      },
     };
   }
 
   try {
-    const raw = await completeJson<z.infer<typeof styleProfileSchema>>({
+    const { data, meta } = await completeJsonWithMeta<z.infer<typeof styleProfileSchema>>({
       system: STYLE_PROFILER_SYSTEM,
       user: `Analyze this resume text and return only a JSON object with the style profile fields.\n\nResume text:\n${clean}`,
       temperature: 0.1,
       maxTokens: 400,
-    });
+    }, llmConfig);
 
-    const parsed = styleProfileSchema.parse(raw);
+    const parsed = styleProfileSchema.parse(data);
     return {
       averageBulletLength: parsed.averageBulletLength ?? avgLen,
       tenseUsage: parsed.tenseUsage,
@@ -62,6 +77,12 @@ export async function extractStyleProfile(resumeOrProfileText: string): Promise<
       punctuationStyle: parsed.punctuationStyle,
       tone: parsed.tone,
       compressionLevel: parsed.compressionLevel,
+      llmUsage: {
+        provider: meta.provider,
+        model: meta.model,
+        stage: 'styleProfile',
+        source: 'llm',
+      },
     };
   } catch {
     return {
@@ -70,6 +91,10 @@ export async function extractStyleProfile(resumeOrProfileText: string): Promise<
       metricDensity: 'medium',
       tone: 'technical',
       compressionLevel: 'medium',
+      llmUsage: {
+        ...fallbackUsage,
+        note: 'LLM style profiling failed; used heuristic defaults.',
+      },
     };
   }
 }

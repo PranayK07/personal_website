@@ -3,6 +3,157 @@ import { normalizeText, splitLines } from '@/lib/resume-advisor/pipeline/text';
 
 const SECTION_KEYWORDS = ['education', 'experience', 'projects', 'skills', 'activities', 'interests'];
 
+const SKILL_TERMS = [
+  'Python',
+  'Java',
+  'JavaScript',
+  'TypeScript',
+  'C',
+  'C++',
+  'C#',
+  'Go',
+  'Rust',
+  'Kotlin',
+  'Swift',
+  'SQL',
+  'NoSQL',
+  'MongoDB',
+  'PostgreSQL',
+  'MySQL',
+  'Redis',
+  'DynamoDB',
+  'Snowflake',
+  'BigQuery',
+  'Pandas',
+  'NumPy',
+  'Scikit-learn',
+  'TensorFlow',
+  'PyTorch',
+  'XGBoost',
+  'Hugging Face',
+  'LangChain',
+  'OpenAI',
+  'LLM',
+  'NLP',
+  'Machine Learning',
+  'Deep Learning',
+  'Computer Vision',
+  'React',
+  'Next.js',
+  'Node.js',
+  'Express',
+  'FastAPI',
+  'Flask',
+  'Django',
+  'Spring Boot',
+  'GraphQL',
+  'REST',
+  'Microservices',
+  'AWS',
+  'GCP',
+  'Azure',
+  'Docker',
+  'Kubernetes',
+  'Terraform',
+  'Linux',
+  'Git',
+  'GitHub Actions',
+  'CI/CD',
+  'Jenkins',
+  'Tableau',
+  'Power BI',
+  'Excel',
+  'Spark',
+  'Hadoop',
+  'Airflow',
+  'ETL',
+  'API',
+  'gRPC',
+  'OAuth',
+  'Jest',
+  'Pytest',
+  'Playwright',
+];
+
+type ResumeInputSource = 'uploaded_resume' | 'manual_input';
+
+function uniq(items: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+
+  for (const item of items) {
+    const normalized = item.toLowerCase();
+    if (seen.has(normalized)) continue;
+    seen.add(normalized);
+    out.push(item);
+  }
+
+  return out;
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function normalizeSkillToken(token: string): string {
+  return token
+    .trim()
+    .replace(/^[-*•]/, '')
+    .replace(/^\d+\.?\s*/, '')
+    .replace(/\s+/g, ' ')
+    .replace(/[|]+/g, ' ')
+    .replace(/^[^a-z0-9+#]+/i, '')
+    .replace(/[^a-z0-9+#.\/-]+$/i, '');
+}
+
+function extractKnownSkills(text: string): string[] {
+  const lower = ` ${text.toLowerCase()} `;
+  const hits = SKILL_TERMS.filter((term) => {
+    const pattern = new RegExp(`(^|[^a-z0-9+#])${escapeRegExp(term.toLowerCase())}([^a-z0-9+#]|$)`, 'i');
+    return pattern.test(lower);
+  });
+
+  return uniq(hits);
+}
+
+function splitSkillLikeTokens(text: string): string[] {
+  return text
+    .replace(/technical skills\s*:?/gi, '')
+    .replace(/languages\s*:?/gi, '')
+    .replace(/frameworks\s*:?/gi, '')
+    .replace(/tools\s*:?/gi, '')
+    .replace(/technologies\s*:?/gi, '')
+    .split(/[;,|\n]/)
+    .map(normalizeSkillToken)
+    .filter((token) => token.length >= 2 && token.length <= 40)
+    .filter((token) => !/^(skills?|tools?|technologies|interests?|activities)$/i.test(token));
+}
+
+function inferSkillsFromText(rawText: string): string[] {
+  const known = extractKnownSkills(rawText);
+  const lines = rawText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const skillLikeLines = lines.filter((line) => {
+    if (/(skills?|technologies|tools?|frameworks?|languages?|stack)/i.test(line)) {
+      return true;
+    }
+
+    const delimiterCount = (line.match(/[;,|]/g) || []).length;
+    return delimiterCount >= 3 && line.length <= 220;
+  });
+
+  const explicitText = skillLikeLines.join('; ');
+  const tokenized = explicitText
+    ? splitSkillLikeTokens(explicitText).filter((token) => /[a-z]/i.test(token)).slice(0, 120)
+    : [];
+
+  return uniq([...known, ...tokenized]).slice(0, 60);
+}
+
+function parseTechnologiesFromText(text: string): string[] {
+  const inferred = inferSkillsFromText(text);
+  return inferred.slice(0, 12);
+}
+
 function detectHeading(line: string): boolean {
   const compact = line.trim();
   const lower = compact.toLowerCase();
@@ -54,10 +205,10 @@ function extractBullets(lines: string[]): string[] {
     return bullets;
   }
 
-  return lines.filter((line) => line.length > 20).slice(0, 3);
+  return lines.filter((line) => line.length > 20).slice(0, 4);
 }
 
-function parseEducationSection(section: ResumeParseSection) {
+function parseEducationSection(section: ResumeParseSection, source: ResumeInputSource) {
   const lines = section.rawLines;
   if (lines.length === 0) {
     return [];
@@ -81,14 +232,14 @@ function parseEducationSection(section: ResumeParseSection) {
         .map((item) => item.trim())
         .filter(Boolean),
       provenance: {
-        source: 'uploaded_resume' as const,
+        source,
         confidence: 0.85,
       },
     },
   ];
 }
 
-function parseExperienceSection(section: ResumeParseSection) {
+function parseExperienceSection(section: ResumeParseSection, source: ResumeInputSource) {
   const lines = section.rawLines;
   const entries: Profile['experience'] = [];
   let block: string[] = [];
@@ -104,6 +255,7 @@ function parseExperienceSection(section: ResumeParseSection) {
     const dateLine = block.find((line) => /20\d\d|present/i.test(line)) || '';
 
     const titleCompanyParts = titleCompany.split(',').map((part) => part.trim());
+    const blockText = block.join(' ');
 
     entries.push({
       id: `resume-exp-${entries.length + 1}`,
@@ -111,11 +263,11 @@ function parseExperienceSection(section: ResumeParseSection) {
       company: titleCompanyParts[1] || titleCompanyParts[0] || 'Company',
       location: '',
       date: dateLine || 'Unknown',
-      summary: block.join(' ').slice(0, 280),
+      summary: blockText.slice(0, 320),
       bullets: extractBullets(block),
-      technologies: [],
+      technologies: parseTechnologiesFromText(blockText),
       provenance: {
-        source: 'uploaded_resume',
+        source,
         confidence: 0.85,
       },
     });
@@ -137,7 +289,7 @@ function parseExperienceSection(section: ResumeParseSection) {
   return entries;
 }
 
-function parseProjectSection(section: ResumeParseSection) {
+function parseProjectSection(section: ResumeParseSection, source: ResumeInputSource) {
   const lines = section.rawLines;
   const entries: Profile['projects'] = [];
   let block: string[] = [];
@@ -149,17 +301,18 @@ function parseProjectSection(section: ResumeParseSection) {
 
     const first = block[0] || 'Project';
     const dateLine = block.find((line) => /20\d\d|present/i.test(line)) || '';
+    const blockText = block.join(' ');
 
     entries.push({
       id: `resume-proj-${entries.length + 1}`,
       title: first,
       role: 'Contributor',
       date: dateLine || 'Unknown',
-      summary: block.join(' ').slice(0, 260),
+      summary: blockText.slice(0, 300),
       bullets: extractBullets(block),
-      technologies: [],
+      technologies: parseTechnologiesFromText(blockText),
       provenance: {
-        source: 'uploaded_resume',
+        source,
         confidence: 0.82,
       },
     });
@@ -182,14 +335,11 @@ function parseProjectSection(section: ResumeParseSection) {
   return entries;
 }
 
-function parseSkillsSection(section: ResumeParseSection) {
+function parseSkillsSection(section: ResumeParseSection, source: ResumeInputSource) {
   const lines = section.rawLines.join(' ');
-  const skillTokens = lines
-    .replace(/technical skills\s*:?/gi, '')
-    .split(/[;,|]/)
-    .map((skill) => skill.trim())
-    .filter((skill) => skill.length > 1)
-    .slice(0, 40);
+  const explicitTokens = splitSkillLikeTokens(lines);
+  const inferred = extractKnownSkills(lines);
+  const skillTokens = uniq([...explicitTokens, ...inferred]).slice(0, 60);
 
   return [
     {
@@ -197,14 +347,14 @@ function parseSkillsSection(section: ResumeParseSection) {
       label: 'Resume Skills',
       skills: skillTokens,
       provenance: {
-        source: 'uploaded_resume' as const,
+        source,
         confidence: 0.8,
       },
     },
   ];
 }
 
-export function parseResumeText(rawText: string): ResumeParseResult {
+export function parseResumeText(rawText: string, source: ResumeInputSource = 'uploaded_resume'): ResumeParseResult {
   const normalized = normalizeText(rawText);
 
   if (!normalized) {
@@ -237,11 +387,26 @@ export function parseResumeText(rawText: string): ResumeParseResult {
   if (!skillsSection) warnings.push('Skills section was not confidently detected.');
   if (confidence < 0.55) warnings.push('Overall parse confidence is low. Use website-only mode or manual text fallback.');
 
+  const inferredSkills = inferSkillsFromText(rawText);
+
   const parsedProfile: Partial<Profile> = {
-    education: educationSection ? parseEducationSection(educationSection) : [],
-    experience: experienceSection ? parseExperienceSection(experienceSection) : [],
-    projects: projectSection ? parseProjectSection(projectSection) : [],
-    skills: skillsSection ? parseSkillsSection(skillsSection) : [],
+    education: educationSection ? parseEducationSection(educationSection, source) : [],
+    experience: experienceSection ? parseExperienceSection(experienceSection, source) : [],
+    projects: projectSection ? parseProjectSection(projectSection, source) : [],
+    skills: skillsSection
+      ? parseSkillsSection(skillsSection, source)
+      : (inferredSkills.length > 0
+        ? [{
+          id: 'resume-skills-inferred',
+          label: 'Inferred Skills',
+          skills: inferredSkills,
+          provenance: {
+            source,
+            confidence: 0.65,
+            note: 'Extracted from raw resume/manual text due missing explicit skills section.',
+          },
+        }]
+        : []),
   };
 
   return {

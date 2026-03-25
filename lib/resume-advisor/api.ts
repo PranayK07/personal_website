@@ -20,6 +20,8 @@ export async function parseJsonBody<T>(req: NextRequest, schema: ZodSchema<T>): 
 }
 
 export function internalErrorResponse(error: unknown) {
+  // Local-only internal tool: log full server error for debugging in terminal.
+  console.error('[resume-advisor] API error', error);
   const message = error instanceof Error ? error.message : 'Unknown error';
   return NextResponse.json({ error: message }, { status: 500 });
 }

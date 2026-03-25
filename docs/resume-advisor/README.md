@@ -21,14 +21,15 @@ It is intentionally not linked in public navigation and is designed for private 
    - website-only mode, or
    - manual plaintext fallback (paste resume text and parse).
 5. Click `Merge & Rank Recommendations`.
-6. Review recommended experiences/projects/skills.
-7. Override selections as needed.
-8. Set aggressiveness mode.
-9. Click `Preview (Regenerate)`.
-10. Review:
+6. Review recommended experiences/projects.
+7. Keep exactly 5 total experience/project items selected (2+3 or 3+2).
+8. Skills are auto-selected from website profile + uploaded/manual resume text + JD relevance scoring.
+9. Set aggressiveness mode.
+10. Click `Preview (Regenerate)`.
+11. Review:
    - analysis panel (ATS score, keyword coverage, gaps, risks, provenance),
    - one-page resume preview.
-11. Export:
+12. Export:
    - `Download PDF` (fidelity-first),
    - `Download DOCX` (editability-first).
 
@@ -41,6 +42,7 @@ It is intentionally not linked in public navigation and is designed for private 
 - Inputs:
   - shared website profile model,
   - optional uploaded resume parse,
+  - optional manual resume text (combined with uploaded PDF text when both are provided),
   - pasted JD text.
 - Merge precedence: `uploaded resume > website profile` when conflicts are detected.
 - Conflicts are surfaced in the merge/rank panel.
@@ -88,11 +90,20 @@ The analysis panel includes:
 - No PDF-to-DOCX conversion is used.
 
 ## Required Environment Variables
-- `GROQ_API_KEY` (existing LLM backend key)
 - `RESUME_ADVISOR_ROUTE_SLUG`
 - `RESUME_ADVISOR_PASSWORD`
 - `RESUME_ADVISOR_SESSION_SECRET`
-- Optional: `RESUME_ADVISOR_MODEL`
+- Optional: `RESUME_ADVISOR_PROVIDER` (`groq`, `gemini`, or `huggingface`; default `groq`)
+- Optional: `RESUME_ADVISOR_MODEL` (provider-specific model id)
+- Provider key (choose based on `RESUME_ADVISOR_PROVIDER`):
+  - `GROQ_API_KEY` for Groq
+  - `GEMINI_API_KEY` for Gemini
+  - `HUGGINGFACE_API_KEY` (or `HF_TOKEN`) for Hugging Face
+
+## Model Selector
+- The Resume Advisor header includes a provider/model selector.
+- Your selection is saved per local session (IndexedDB) and sent with each generation call.
+- Hugging Face preset included: `Qwen/Qwen2.5-72B-Instruct`.
 
 ## Required Packages
 - `zod`
@@ -114,4 +125,4 @@ Do not treat it as strong security for sensitive multi-user/admin workloads.
 - PDF export fails in local dev:
   - set `CHROMIUM_EXECUTABLE_PATH` to a local Chromium/Chrome binary.
 - LLM failures:
-  - verify `GROQ_API_KEY` and optional `RESUME_ADVISOR_MODEL`.
+  - verify `RESUME_ADVISOR_PROVIDER` + matching API key (`GROQ_API_KEY`, `GEMINI_API_KEY`, or `HUGGINGFACE_API_KEY` / `HF_TOKEN`) and optional `RESUME_ADVISOR_MODEL`.

@@ -4,12 +4,21 @@ export const loginSchema = z.object({
   password: z.string().min(1),
 });
 
+const llmProviderSchema = z.enum(['groq', 'gemini', 'huggingface']);
+
+export const llmConfigSchema = z.object({
+  provider: llmProviderSchema,
+  model: z.string().min(1),
+}).strict();
+
 export const jdAnalyzeSchema = z.object({
   jdText: z.string().min(20),
+  llmConfig: llmConfigSchema.optional(),
 });
 
 export const resumeParseSchema = z.object({
   rawText: z.string().min(1),
+  source: z.enum(['uploaded_resume', 'manual_input']).optional(),
 });
 
 export const atsKeywordSchema = z.object({
@@ -53,6 +62,13 @@ export const styleProfileSchema = z.object({
   metricDensity: z.enum(['high', 'medium', 'low']).optional(),
   tone: z.enum(['technical', 'business', 'mixed']).optional(),
   compressionLevel: z.enum(['high', 'medium', 'low']).optional(),
+  llmUsage: z.object({
+    provider: llmProviderSchema,
+    model: z.string(),
+    stage: z.enum(['jdAnalysis', 'styleProfile', 'bulletRewrite']),
+    source: z.enum(['llm', 'fallback']),
+    note: z.string().optional(),
+  }).optional(),
 }).strict().optional();
 
 export const evidenceMapSchema = z.object({
@@ -182,6 +198,7 @@ export const resumeParseResultSchema = z.object({
 export const mergeRankSchema = z.object({
   jdAnalysis: jdAnalysisSchema,
   resumeParseResult: resumeParseResultSchema.nullable(),
+  llmConfig: llmConfigSchema.optional(),
 });
 
 export const selectionStateSchema = z.object({
@@ -204,6 +221,7 @@ export const generatePreviewSchema = z.object({
   selectionState: selectionStateSchema,
   styleProfile: styleProfileSchema,
   evidenceMap: evidenceMapSchema,
+  llmConfig: llmConfigSchema.optional(),
 });
 
 const tailoredBulletMetadataSchema = z.object({

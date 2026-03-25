@@ -5,6 +5,9 @@ import {
   AggressivenessMode,
   GeneratePreviewResponse,
   JobDescriptionAnalysis,
+  LLMConfig,
+  LLMProvider,
+  LLMUsage,
   MergeRankResponse,
   ResumeParseResult,
   SelectionState,
@@ -30,6 +33,12 @@ interface StepCardProps {
   children: ReactNode;
 }
 
+interface ModelIndicatorProps {
+  label: string;
+  usage?: LLMUsage;
+  pendingText?: string;
+}
+
 const DEFAULT_AGGRESSIVENESS: AggressivenessMode = 'balanced';
 
 const baseInputClass =
@@ -40,6 +49,20 @@ const secondaryButtonClass =
   'inline-flex items-center justify-center rounded-2xl bg-white/10 px-7 py-4 text-base font-semibold text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50 min-h-[52px] min-w-[100px]';
 const successButtonClass =
   'inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-7 py-4 text-base font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50 min-h-[52px] min-w-[120px]';
+
+const MODEL_OPTIONS: Record<LLMProvider, string[]> = {
+  groq: ['openai/gpt-oss-120b'],
+  gemini: ['gemini-3.1-pro-preview', 'gemini-2.5-pro', 'gemini-2.5-flash'],
+  huggingface: ['Qwen/Qwen2.5-72B-Instruct'],
+};
+
+const DEFAULT_LLM_CONFIG: LLMConfig = {
+  provider: 'groq',
+  model: 'openai/gpt-oss-120b',
+};
+
+const MAX_SELECTED_EXP_PROJECT_ITEMS = 5;
+const MAX_SELECTED_PER_TYPE = 3;
 
 function shortId() {
   return Math.random().toString(36).slice(2, 9);
@@ -57,7 +80,53 @@ function defaultSession(): AdvisorSessionRecord {
     updatedAt: nowIso(),
     title: `Session ${new Date().toLocaleDateString()}`,
     jdText: '',
+    llmConfig: { ...DEFAULT_LLM_CONFIG },
   };
+}
+
+async function readErrorMessage(res: Response, fallback: string): Promise<string> {
+  const contentType = res.headers.get('content-type') || '';
+
+  if (contentType.includes('application/json')) {
+    try {
+      const body = await res.json();
+      if (body?.error && typeof body.error === 'string') {
+        return body.error;
+      }
+      if (body?.details && typeof body.details === 'string') {
+        return body.details;
+      }
+    } catch {
+      // fall through to text handling
+    }
+  }
+
+  try {
+    const text = await res.text();
+    if (text) {
+      return text;
+    }
+  } catch {
+    // ignore text parse failure and use fallback
+  }
+
+  return `${fallback} (HTTP ${res.status})`;
+}
+
+async function readJsonResponse<T>(res: Response, fallback: string): Promise<T> {
+  const contentType = res.headers.get('content-type') || '';
+
+  if (contentType.includes('application/json')) {
+    try {
+      return await res.json();
+    } catch {
+      const text = await res.text().catch(() => '');
+      throw new Error(text || `${fallback}: invalid JSON response.`);
+    }
+  }
+
+  const text = await res.text().catch(() => '');
+  throw new Error(text || `${fallback}: expected JSON response.`);
 }
 
 function itemName(
@@ -137,6 +206,24 @@ function StepCard({ stepNumber, title, description, completed, children }: StepC
   );
 }
 
+function ModelIndicator({
+  label,
+  usage,
+  pendingText = 'Not generated yet.',
+}: ModelIndicatorProps) {
+  const modelText = usage
+    ? `${usage.provider}/${usage.model}${usage.source === 'fallback' ? ' (fallback)' : ''}`
+    : pendingText;
+
+  return (
+    <div className="rounded-2xl bg-white/[0.04] px-5 py-4">
+      <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-white/60">{label}</p>
+      <p className="mt-2 text-sm font-semibold leading-relaxed text-white/90 break-all">{modelText}</p>
+      {usage?.note && <p className="mt-2 text-xs leading-relaxed text-white/65">{usage.note}</p>}
+    </div>
+  );
+}
+
 export default function ResumeAdvisorApp({ initialAuthenticated }: ResumeAdvisorAppProps) {
   const [authenticated, setAuthenticated] = useState(initialAuthenticated);
   const [password, setPassword] = useState('');
@@ -147,10 +234,12 @@ export default function ResumeAdvisorApp({ initialAuthenticated }: ResumeAdvisor
 
   const [sessions, setSessions] = useState<AdvisorSessionRecord[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [llmConfig, setLlmConfig] = useState<LLMConfig>({ ...DEFAULT_LLM_CONFIG });
 
   const [jdText, setJdText] = useState('');
   const [jdAnalysis, setJdAnalysis] = useState<JobDescriptionAnalysis | null>(null);
 
+  const [selectedResumeFile, setSelectedResumeFile] = useState<File | null>(null);
   const [manualResumeText, setManualResumeText] = useState('');
   const [resumeParseResult, setResumeParseResult] = useState<ResumeParseResult | null>(null);
 
@@ -174,6 +263,14 @@ export default function ResumeAdvisorApp({ initialAuthenticated }: ResumeAdvisor
   const step4Complete = Boolean(mergeRankResult && selectionState);
   const step5Complete = Boolean(previewResult);
   const step6Complete = Boolean(previewResult && (exportedState.pdf || exportedState.docx));
+  const styleProfileUsage = mergeRankResult?.llmUsage?.styleProfile ?? mergeRankResult?.styleProfile?.llmUsage;
+  const bulletRewriteUsage = previewResult?.llmUsage?.bulletRewrite;
+  const modelChoices = useMemo(() => {
+    const defaults = MODEL_OPTIONS[llmConfig.provider];
+    return defaults.includes(llmConfig.model)
+      ? defaults
+      : [llmConfig.model, ...defaults];
+  }, [llmConfig]);
 
   async function refreshSessions() {
     const all = await listSessions();
@@ -227,9 +324,33 @@ export default function ResumeAdvisorApp({ initialAuthenticated }: ResumeAdvisor
     setMergeRankResult(activeSession.mergeRankResult || null);
     setSelectionState(activeSession.mergeRankResult?.selectionState || null);
     setPreviewResult(activeSession.previewResult || null);
+    setLlmConfig(activeSession.llmConfig || { ...DEFAULT_LLM_CONFIG });
+    setSelectedResumeFile(null);
     setManualResumeText(activeSession.resumeParseResult?.rawText || '');
     setExportedState({ pdf: false, docx: false });
   }, [activeSession]);
+
+  function updateLlmProvider(provider: LLMProvider) {
+    const next: LLMConfig = {
+      provider,
+      model: MODEL_OPTIONS[provider][0],
+    };
+    setLlmConfig(next);
+    persistCurrentSession({ llmConfig: next }).catch((error) => {
+      console.error('Failed to persist provider selection', error);
+    });
+  }
+
+  function updateLlmModel(model: string) {
+    const next: LLMConfig = {
+      provider: llmConfig.provider,
+      model,
+    };
+    setLlmConfig(next);
+    persistCurrentSession({ llmConfig: next }).catch((error) => {
+      console.error('Failed to persist model selection', error);
+    });
+  }
 
   async function handleLogin() {
     setAuthError(null);
@@ -243,8 +364,7 @@ export default function ResumeAdvisorApp({ initialAuthenticated }: ResumeAdvisor
       });
 
       if (!res.ok) {
-        const body = await res.json();
-        throw new Error(body.error || 'Login failed.');
+        throw new Error(await readErrorMessage(res, 'Login failed.'));
       }
 
       setAuthenticated(true);
@@ -282,19 +402,19 @@ export default function ResumeAdvisorApp({ initialAuthenticated }: ResumeAdvisor
       const res = await fetch('/api/internal/resume-advisor/jd/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jdText }),
+        body: JSON.stringify({ jdText, llmConfig }),
       });
 
       if (!res.ok) {
-        const body = await res.json();
-        throw new Error(body.error || 'JD analysis failed.');
+        throw new Error(await readErrorMessage(res, 'JD analysis failed.'));
       }
 
-      const body = await res.json();
+      const body = await readJsonResponse<{ analysis: JobDescriptionAnalysis }>(res, 'JD analysis failed');
       setJdAnalysis(body.analysis);
 
       await persistCurrentSession({
         jdText,
+        llmConfig,
         jdAnalysis: body.analysis,
         title: body.analysis.inferredRoleFamily ? `${body.analysis.inferredRoleFamily} Target` : 'Resume session',
       });
@@ -307,7 +427,11 @@ export default function ResumeAdvisorApp({ initialAuthenticated }: ResumeAdvisor
     }
   }
 
-  async function parseResumeText(rawText: string, uploadedFile?: File) {
+  async function parseResumeText(
+    rawText: string,
+    source: 'uploaded_resume' | 'manual_input',
+    uploadedFile?: File,
+  ) {
     setLoading('Parsing resume text...');
     setStatusMessage(null);
 
@@ -315,17 +439,15 @@ export default function ResumeAdvisorApp({ initialAuthenticated }: ResumeAdvisor
       const res = await fetch('/api/internal/resume-advisor/resume/parse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rawText }),
+        body: JSON.stringify({ rawText, source }),
       });
 
       if (!res.ok) {
-        const body = await res.json();
-        throw new Error(body.error || 'Resume parsing failed.');
+        throw new Error(await readErrorMessage(res, 'Resume parsing failed.'));
       }
 
-      const body = await res.json();
+      const body = await readJsonResponse<{ result: ResumeParseResult }>(res, 'Resume parsing failed');
       setResumeParseResult(body.result);
-      setManualResumeText(rawText);
 
       await persistCurrentSession({
         resumeParseResult: body.result,
@@ -348,19 +470,41 @@ export default function ResumeAdvisorApp({ initialAuthenticated }: ResumeAdvisor
   }
 
   async function onResumeFileChange(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const file = event.target.files?.[0] || null;
+    setSelectedResumeFile(file);
 
-    setLoading('Extracting PDF text...');
-    setStatusMessage(null);
-
-    try {
-      const extracted = await extractTextFromPdf(file);
-      await parseResumeText(extracted.text, file);
-    } catch (error) {
-      setStatusMessage(error instanceof Error ? error.message : 'PDF extraction failed. Use manual text fallback.');
-      setLoading(null);
+    if (file) {
+      setStatusMessage(`Selected file: ${file.name}. Click "Submit Resume Input" to parse.`);
     }
+  }
+
+  async function submitResumeInput() {
+    if (selectedResumeFile) {
+      setLoading('Extracting PDF text...');
+      setStatusMessage(null);
+
+      try {
+        const extracted = await extractTextFromPdf(selectedResumeFile);
+        if (manualResumeText.trim()) {
+          const combinedText = `${extracted.text}\n\nMANUAL_RESUME_CONTEXT:\n${manualResumeText.trim()}`;
+          await parseResumeText(combinedText, 'uploaded_resume', selectedResumeFile);
+          setStatusMessage('Resume PDF and manual text were combined for parsing and ranking context.');
+        } else {
+          await parseResumeText(extracted.text, 'uploaded_resume', selectedResumeFile);
+        }
+      } catch (error) {
+        setStatusMessage(error instanceof Error ? error.message : 'PDF extraction failed. Use manual text fallback.');
+        setLoading(null);
+      }
+      return;
+    }
+
+    if (manualResumeText.trim()) {
+      await parseResumeText(manualResumeText, 'manual_input');
+      return;
+    }
+
+    setStatusMessage('Choose a resume PDF or paste manual text before submitting.');
   }
 
   async function runMergeRank() {
@@ -379,23 +523,24 @@ export default function ResumeAdvisorApp({ initialAuthenticated }: ResumeAdvisor
         body: JSON.stringify({
           jdAnalysis,
           resumeParseResult,
+          llmConfig,
         }),
       });
 
       if (!res.ok) {
-        const body = await res.json();
-        throw new Error(body.error || 'Merge/rank failed.');
+        throw new Error(await readErrorMessage(res, 'Merge/rank failed.'));
       }
 
-      const body = await res.json();
+      const body = await readJsonResponse<MergeRankResponse>(res, 'Merge/rank failed');
       setMergeRankResult(body);
       setSelectionState(body.selectionState);
 
       await persistCurrentSession({
+        llmConfig,
         mergeRankResult: body,
       });
 
-      setStatusMessage('Merge/rank complete. Review recommendations and adjust selections.');
+      setStatusMessage('Merge/rank complete. Review recommendations (5-item cap) and adjust experience/project selections. Skills are auto-selected.');
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : 'Merge/rank failed.');
     } finally {
@@ -405,12 +550,26 @@ export default function ResumeAdvisorApp({ initialAuthenticated }: ResumeAdvisor
 
   function toggleSelection(type: 'experience' | 'project' | 'skill', id: string) {
     if (!selectionState) return;
+    if (type === 'skill') return;
 
     setPreviewResult(null);
     setExportedState({ pdf: false, docx: false });
 
     if (type === 'experience') {
-      const selected = selectionState.selectedExperienceIds.includes(id)
+      const isSelected = selectionState.selectedExperienceIds.includes(id);
+      const totalSelected = selectionState.selectedExperienceIds.length + selectionState.selectedProjectIds.length;
+
+      if (!isSelected && selectionState.selectedExperienceIds.length >= MAX_SELECTED_PER_TYPE) {
+        setStatusMessage(`You can select up to ${MAX_SELECTED_PER_TYPE} experiences.`);
+        return;
+      }
+
+      if (!isSelected && totalSelected >= MAX_SELECTED_EXP_PROJECT_ITEMS) {
+        setStatusMessage(`You can select up to ${MAX_SELECTED_EXP_PROJECT_ITEMS} total experiences/projects.`);
+        return;
+      }
+
+      const selected = isSelected
         ? selectionState.selectedExperienceIds.filter((item) => item !== id)
         : [...selectionState.selectedExperienceIds, id];
 
@@ -419,19 +578,26 @@ export default function ResumeAdvisorApp({ initialAuthenticated }: ResumeAdvisor
     }
 
     if (type === 'project') {
-      const selected = selectionState.selectedProjectIds.includes(id)
+      const isSelected = selectionState.selectedProjectIds.includes(id);
+      const totalSelected = selectionState.selectedExperienceIds.length + selectionState.selectedProjectIds.length;
+
+      if (!isSelected && selectionState.selectedProjectIds.length >= MAX_SELECTED_PER_TYPE) {
+        setStatusMessage(`You can select up to ${MAX_SELECTED_PER_TYPE} projects.`);
+        return;
+      }
+
+      if (!isSelected && totalSelected >= MAX_SELECTED_EXP_PROJECT_ITEMS) {
+        setStatusMessage(`You can select up to ${MAX_SELECTED_EXP_PROJECT_ITEMS} total experiences/projects.`);
+        return;
+      }
+
+      const selected = isSelected
         ? selectionState.selectedProjectIds.filter((item) => item !== id)
         : [...selectionState.selectedProjectIds, id];
 
       setSelectionState({ ...selectionState, selectedProjectIds: selected });
       return;
     }
-
-    const selected = selectionState.selectedSkillNames.includes(id)
-      ? selectionState.selectedSkillNames.filter((item) => item !== id)
-      : [...selectionState.selectedSkillNames, id];
-
-    setSelectionState({ ...selectionState, selectedSkillNames: selected });
   }
 
   function updateAggressiveness(mode: AggressivenessMode) {
@@ -452,6 +618,13 @@ export default function ResumeAdvisorApp({ initialAuthenticated }: ResumeAdvisor
       return;
     }
 
+    const totalSelected = selectionState.selectedExperienceIds.length + selectionState.selectedProjectIds.length;
+    const availableTotal = mergeRankResult.mergedProfile.experience.length + mergeRankResult.mergedProfile.projects.length;
+    if (availableTotal >= MAX_SELECTED_EXP_PROJECT_ITEMS && totalSelected !== MAX_SELECTED_EXP_PROJECT_ITEMS) {
+      setStatusMessage(`Select exactly ${MAX_SELECTED_EXP_PROJECT_ITEMS} total experiences/projects before generating preview.`);
+      return;
+    }
+
     setLoading('Generating tailored one-page preview...');
     setStatusMessage(null);
 
@@ -465,19 +638,20 @@ export default function ResumeAdvisorApp({ initialAuthenticated }: ResumeAdvisor
           selectionState,
           styleProfile: mergeRankResult.styleProfile ?? undefined,
           evidenceMap: mergeRankResult.evidenceMap ?? undefined,
+          llmConfig,
         }),
       });
 
       if (!res.ok) {
-        const body = await res.json();
-        throw new Error(body.error || 'Preview generation failed.');
+        throw new Error(await readErrorMessage(res, 'Preview generation failed.'));
       }
 
-      const body = await res.json();
+      const body = await readJsonResponse<GeneratePreviewResponse>(res, 'Preview generation failed');
       setPreviewResult(body);
       setExportedState({ pdf: false, docx: false });
 
       await persistCurrentSession({
+        llmConfig,
         mergeRankResult: {
           ...mergeRankResult,
           selectionState,
@@ -514,8 +688,7 @@ export default function ResumeAdvisorApp({ initialAuthenticated }: ResumeAdvisor
       });
 
       if (!res.ok) {
-        const body = await res.json();
-        throw new Error(body.error || `Export ${kind} failed.`);
+        throw new Error(await readErrorMessage(res, `Export ${kind} failed.`));
       }
 
       const blob = await res.blob();
@@ -613,6 +786,41 @@ export default function ResumeAdvisorApp({ initialAuthenticated }: ResumeAdvisor
             </select>
           </div>
 
+          <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="rounded-2xl bg-white/[0.04] p-6">
+              <label className="mb-3 block text-sm font-semibold uppercase tracking-[0.14em] text-white/70">
+                Model Provider
+              </label>
+              <select
+                className={baseInputClass}
+                value={llmConfig.provider}
+                onChange={(e) => updateLlmProvider(e.target.value as LLMProvider)}
+              >
+                <option value="groq">Groq</option>
+                <option value="gemini">Gemini</option>
+                <option value="huggingface">Hugging Face</option>
+              </select>
+            </div>
+
+            <div className="rounded-2xl bg-white/[0.04] p-6">
+              <label className="mb-3 block text-sm font-semibold uppercase tracking-[0.14em] text-white/70">
+                Model
+              </label>
+              <select
+                className={baseInputClass}
+                value={llmConfig.model}
+                onChange={(e) => updateLlmModel(e.target.value)}
+              >
+                {modelChoices.map((model) => (
+                  <option key={model} value={model}>{model}</option>
+                ))}
+              </select>
+              <p className="mt-3 text-sm text-white/65 break-all">
+                Active: {llmConfig.provider}/{llmConfig.model}
+              </p>
+            </div>
+          </div>
+
           <div className="mt-8 space-y-4 text-sm">
             {loading && (
               <p className="rounded-2xl bg-indigo-500/15 px-6 py-4 text-base text-indigo-100">
@@ -657,31 +865,38 @@ export default function ResumeAdvisorApp({ initialAuthenticated }: ResumeAdvisor
               description="Inspect extracted ATS keywords, must-have requirements, preferred skills, and the inferred role family."
             >
               {jdAnalysis ? (
-                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                  <div className="rounded-2xl bg-white/[0.04] p-6">
-                    <p className="text-xs uppercase tracking-[0.16em] text-white/60">Inferred Target Role</p>
-                    <p className="mt-3 text-lg font-semibold">{jdAnalysis.inferredRoleFamily}</p>
-                  </div>
+                <div className="space-y-5">
+                  <ModelIndicator
+                    label="JD Analysis Model"
+                    usage={jdAnalysis.llmUsage}
+                  />
 
-                  <div className="rounded-2xl bg-white/[0.04] p-6">
-                    <p className="text-xs uppercase tracking-[0.16em] text-white/60">ATS Keywords</p>
-                    <p className="mt-3 text-base leading-relaxed text-white/85">
-                      {jdAnalysis.atsKeywords.map((kw) => kw.keyword).slice(0, 30).join(', ')}
-                    </p>
-                  </div>
+                  <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                    <div className="rounded-2xl bg-white/[0.04] p-6">
+                      <p className="text-xs uppercase tracking-[0.16em] text-white/60">Inferred Target Role</p>
+                      <p className="mt-3 text-lg font-semibold">{jdAnalysis.inferredRoleFamily}</p>
+                    </div>
 
-                  <div className="rounded-2xl bg-white/[0.04] p-6">
-                    <p className="text-xs uppercase tracking-[0.16em] text-white/60">Must-Have Skills</p>
-                    <p className="mt-3 text-base leading-relaxed text-white/85">
-                      {jdAnalysis.mustHaveSkills.join(', ') || 'None detected'}
-                    </p>
-                  </div>
+                    <div className="rounded-2xl bg-white/[0.04] p-6">
+                      <p className="text-xs uppercase tracking-[0.16em] text-white/60">ATS Keywords</p>
+                      <p className="mt-3 text-base leading-relaxed text-white/85">
+                        {jdAnalysis.atsKeywords.map((kw) => kw.keyword).slice(0, 30).join(', ')}
+                      </p>
+                    </div>
 
-                  <div className="rounded-2xl bg-white/[0.04] p-6">
-                    <p className="text-xs uppercase tracking-[0.16em] text-white/60">Preferred Skills</p>
-                    <p className="mt-3 text-base leading-relaxed text-white/85">
-                      {jdAnalysis.preferredSkills.join(', ') || 'None detected'}
-                    </p>
+                    <div className="rounded-2xl bg-white/[0.04] p-6">
+                      <p className="text-xs uppercase tracking-[0.16em] text-white/60">Must-Have Skills</p>
+                      <p className="mt-3 text-base leading-relaxed text-white/85">
+                        {jdAnalysis.mustHaveSkills.join(', ') || 'None detected'}
+                      </p>
+                    </div>
+
+                    <div className="rounded-2xl bg-white/[0.04] p-6">
+                      <p className="text-xs uppercase tracking-[0.16em] text-white/60">Preferred Skills</p>
+                      <p className="mt-3 text-base leading-relaxed text-white/85">
+                        {jdAnalysis.preferredSkills.join(', ') || 'None detected'}
+                      </p>
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -708,6 +923,11 @@ export default function ResumeAdvisorApp({ initialAuthenticated }: ResumeAdvisor
                     onChange={onResumeFileChange}
                     className="mt-4 block w-full text-base file:mr-4 file:rounded-xl file:border-0 file:bg-indigo-600 file:px-6 file:py-3 file:font-semibold file:text-white hover:file:bg-indigo-500"
                   />
+                  {selectedResumeFile && (
+                    <p className="mt-3 text-sm text-white/70">
+                      Selected: {selectedResumeFile.name}
+                    </p>
+                  )}
                 </div>
 
                 <div className="rounded-2xl bg-white/[0.04] p-6">
@@ -718,16 +938,18 @@ export default function ResumeAdvisorApp({ initialAuthenticated }: ResumeAdvisor
                     className={`${baseInputClass} mt-4 min-h-[200px]`}
                     placeholder="Paste raw resume text if PDF parsing is messy..."
                   />
-                  <div className="mt-6">
-                    <button
-                      className={secondaryButtonClass}
-                      onClick={() => parseResumeText(manualResumeText)}
-                      disabled={!manualResumeText.trim()}
-                    >
-                      Parse Manual Text
-                    </button>
-                  </div>
+                  <p className="mt-3 text-sm text-white/65">
+                    If both file and text are present, both are combined and used together for parsing/ranking context.
+                  </p>
                 </div>
+
+                <button
+                  onClick={submitResumeInput}
+                  disabled={Boolean(loading) || (!selectedResumeFile && !manualResumeText.trim())}
+                  className="inline-flex min-h-[52px] items-center justify-center rounded-xl bg-indigo-600 px-6 py-3 text-base font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Submit Resume Input
+                </button>
 
                 {resumeParseResult && (
                   <div className="rounded-2xl bg-white/[0.04] p-6">
@@ -757,7 +979,7 @@ export default function ResumeAdvisorApp({ initialAuthenticated }: ResumeAdvisor
               stepNumber={4}
               completed={step4Complete}
               title="Merge, Rank, and Override Selections"
-              description="Merge website and resume data (resume preferred on conflict), then review ranked items and adjust selections."
+              description="Merge website/resume/manual context (resume preferred on conflict), then review ranked items. Selection is capped at exactly five experience/project entries for one-page depth."
             >
               <button
                 className={primaryButtonClass}
@@ -769,6 +991,11 @@ export default function ResumeAdvisorApp({ initialAuthenticated }: ResumeAdvisor
 
               {mergeRankResult ? (
                 <div className="space-y-5">
+                  <ModelIndicator
+                    label="Style Profiling Model (during merge/rank)"
+                    usage={styleProfileUsage}
+                  />
+
                   {mergeRankResult.mergedProfile.conflicts.length > 0 && (
                     <div className="rounded-2xl bg-amber-500/15 p-6">
                       <p className="text-sm font-semibold text-amber-100">Conflicts detected (resume preferred)</p>
@@ -784,6 +1011,12 @@ export default function ResumeAdvisorApp({ initialAuthenticated }: ResumeAdvisor
 
                   <div className="rounded-2xl bg-white/[0.04] p-6">
                     <p className="text-sm font-semibold text-white">Ranked Items</p>
+                    {selectionState && (
+                      <p className="mt-1 text-xs text-white/70">
+                        Selected: {selectionState.selectedExperienceIds.length + selectionState.selectedProjectIds.length}/{MAX_SELECTED_EXP_PROJECT_ITEMS}
+                        {' '}({selectionState.selectedExperienceIds.length} experience, {selectionState.selectedProjectIds.length} projects)
+                      </p>
+                    )}
                     <div className="mt-4 max-h-[360px] space-y-4 overflow-auto pr-1">
                       {mergeRankResult.rankedItems.map((item) => {
                         const selected = item.itemType === 'experience'
@@ -825,31 +1058,26 @@ export default function ResumeAdvisorApp({ initialAuthenticated }: ResumeAdvisor
 
                   {selectionState && (
                     <div className="rounded-2xl bg-white/[0.04] p-6">
-                      <p className="text-sm font-semibold text-white">Skill Selection Overrides</p>
-                      <div className="mt-4 grid max-h-[300px] grid-cols-1 gap-3 overflow-auto md:grid-cols-2">
-                        {mergeRankResult.mergedProfile.skills.flatMap((group) => (
-                          group.skills.map((skill) => (
-                            <label
-                              key={`${group.id}-${skill}`}
-                              className="flex items-center gap-3 rounded-xl bg-white/[0.04] px-4 py-3 text-base"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={selectionState.selectedSkillNames.includes(skill)}
-                                onChange={() => toggleSelection('skill', skill)}
-                                className="h-4 w-4"
-                              />
-                              <span>{skill}</span>
-                            </label>
-                          ))
+                      <p className="text-sm font-semibold text-white">Auto-Selected Skills (JD-Weighted)</p>
+                      <p className="mt-2 text-xs text-white/70">
+                        Skills are auto-selected from uploaded resume text, manual text, and website profile based on JD relevance.
+                      </p>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {selectionState.selectedSkillNames.slice(0, 28).map((skill) => (
+                          <span
+                            key={skill}
+                            className="rounded-full bg-white/[0.08] px-3 py-1 text-xs text-white/85"
+                          >
+                            {skill}
+                          </span>
                         ))}
                       </div>
                     </div>
                   )}
                 </div>
               ) : (
-<p className="min-h-[72px] rounded-2xl bg-white/[0.04] px-8 py-6 text-base leading-relaxed text-white/70 break-words">
-                No merge/rank output yet. Complete Steps 1 and 2 first.
+                <p className="min-h-[72px] rounded-2xl bg-white/[0.04] px-8 py-6 text-base leading-relaxed text-white/70 break-words">
+                  No merge/rank output yet. Complete Steps 1 and 2 first.
                 </p>
               )}
             </StepCard>
@@ -862,6 +1090,12 @@ export default function ResumeAdvisorApp({ initialAuthenticated }: ResumeAdvisor
               title="Generate One-Page Tailored Resume"
               description="Set aggressiveness, then explicitly generate preview. Exports are enabled after preview is ready."
             >
+              <ModelIndicator
+                label="Bullet Rewrite Model (during preview generation)"
+                usage={bulletRewriteUsage}
+                pendingText="Generate preview to see exact model."
+              />
+
               <div className="rounded-2xl bg-white/[0.04] p-6">
                 <label className="mb-4 block text-base font-medium text-white/80">Aggressiveness Mode</label>
                 <select
@@ -912,6 +1146,12 @@ export default function ResumeAdvisorApp({ initialAuthenticated }: ResumeAdvisor
             >
               {previewResult ? (
                 <div className="space-y-5">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <ModelIndicator label="JD Analysis Model" usage={jdAnalysis?.llmUsage} />
+                    <ModelIndicator label="Style Profiling Model" usage={styleProfileUsage} />
+                    <ModelIndicator label="Bullet Rewrite Model" usage={bulletRewriteUsage} />
+                  </div>
+
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
                     <div className="rounded-2xl bg-white/[0.04] p-6">
                       <p className="text-xs uppercase tracking-[0.16em] text-white/60">ATS Match Score</p>

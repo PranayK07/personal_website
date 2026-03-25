@@ -146,6 +146,7 @@ export interface JobDescriptionAnalysis {
   taxonomy?: JDKeywordTaxonomy;
   /** Top ATS terms ranked by importance (filtered, no junk). */
   topAtsTerms?: string[];
+  llmUsage?: LLMUsage;
 }
 
 export interface ResumeParseSection {
@@ -271,6 +272,7 @@ export interface StyleProfile {
   punctuationStyle?: string;
   tone?: 'technical' | 'business' | 'mixed';
   compressionLevel?: 'high' | 'medium' | 'low';
+  llmUsage?: LLMUsage;
 }
 
 /** Evidence strength for a requirement. */
@@ -308,10 +310,31 @@ export interface MergeRankResponse {
   selectionState: SelectionState;
   styleProfile?: StyleProfile;
   evidenceMap?: EvidenceMap;
+  llmUsage?: {
+    styleProfile?: LLMUsage;
+  };
 }
 
 export interface GeneratePreviewResponse {
   tailoredResume: TailoredResume;
   generationAnalysis: GenerationAnalysis;
   previewHtml: string;
+  llmUsage?: {
+    bulletRewrite?: LLMUsage;
+  };
+}
+
+export type LLMProvider = 'groq' | 'gemini' | 'huggingface';
+
+export interface LLMConfig {
+  provider: LLMProvider;
+  model: string;
+}
+
+export interface LLMUsage {
+  provider: LLMProvider;
+  model: string;
+  stage: 'jdAnalysis' | 'styleProfile' | 'bulletRewrite';
+  source: 'llm' | 'fallback';
+  note?: string;
 }

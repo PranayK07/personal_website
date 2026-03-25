@@ -1,18 +1,36 @@
 import {
   ConflictItem,
   JobDescriptionAnalysis,
+  LLMConfig,
   MergeRankResponse,
   MergedProfile,
   Profile,
   RankedItem,
   ResumeParseResult,
+  StyleProfile,
 } from '@/lib/resume-advisor/types';
 import { tokenize, uniq } from '@/lib/resume-advisor/pipeline/text';
 import { buildEvidenceMap } from '@/lib/resume-advisor/pipeline/evidence-map';
 import { extractStyleProfile } from '@/lib/resume-advisor/pipeline/style-profile';
 
+const MAX_TOTAL_SELECTED_ITEMS = 5;
+const MIN_ITEMS_PER_TYPE = 2;
+const MAX_ITEMS_PER_TYPE = 3;
+const MAX_AUTO_SELECTED_SKILLS = 22;
+
 function normalizeKey(value: string): string {
-  return value.toLowerCase().replace(/[^a-z0-9]/g, '');
+  return value.toLowerCase().replace(/[^a-z0-9+#]/g, '');
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function containsTerm(text: string, term: string): boolean {
+  const normalized = term.trim().toLowerCase();
+  if (!normalized) return false;
+  const pattern = new RegExp(`(^|[^a-z0-9+#])${escapeRegExp(normalized)}([^a-z0-9+#]|$)`, 'i');
+  return pattern.test(text.toLowerCase());
 }
 
 function buildExperienceKey(item: Profile['experience'][number]): string {
@@ -60,7 +78,7 @@ function mergeExperience(
       ...resumeItem,
       technologies: uniq([...(existing.technologies || []), ...(resumeItem.technologies || [])]),
       provenance: {
-        source: 'uploaded_resume',
+        source: resumeItem.provenance.source,
         confidence: Math.max(existing.provenance.confidence, resumeItem.provenance.confidence),
       },
     };
@@ -106,7 +124,7 @@ function mergeProjects(
       ...resumeItem,
       technologies: uniq([...(existing.technologies || []), ...(resumeItem.technologies || [])]),
       provenance: {
-        source: 'uploaded_resume',
+        source: resumeItem.provenance.source,
         confidence: Math.max(existing.provenance.confidence, resumeItem.provenance.confidence),
       },
     };
@@ -135,7 +153,7 @@ function mergeSkills(base: Profile['skills'], resume: Profile['skills']): Profil
       ...existing,
       skills: uniq([...existing.skills, ...resumeGroup.skills]),
       provenance: {
-        source: 'uploaded_resume',
+        source: resumeGroup.provenance.source,
         confidence: Math.max(existing.provenance.confidence, resumeGroup.provenance.confidence),
       },
     };
@@ -144,28 +162,129 @@ function mergeSkills(base: Profile['skills'], resume: Profile['skills']): Profil
   return merged;
 }
 
-export function mergeProfiles(baseProfile: Profile, resumeParse: ResumeParseResult | null): MergedProfile {
-  const conflicts: ConflictItem[] = [];
+function inferParseSource(resumeParse: ResumeParseResult | null): 'uploaded_resume' | 'manual_input' | 'website' {
+  if (!resumeParse?.parsedProfile) return 'website';
 
-  if (!resumeParse?.parsedProfile) {
-    return {
-      ...baseProfile,
-      conflicts,
-    };
+  const explicit = resumeParse.parsedProfile.skills?.[0]?.provenance.source
+    || resumeParse.parsedProfile.experience?.[0]?.provenance.source
+    || resumeParse.parsedProfile.projects?.[0]?.provenance.source;
+
+  if (explicit === 'manual_input') return 'manual_input';
+  return 'uploaded_resume';
+}
+
+function augmentSkillsWithDynamicSignals(
+  mergedProfile: MergedProfile,
+  resumeParse: ResumeParseResult | null,
+  jdAnalysis: JobDescriptionAnalysis,
+): MergedProfile {
+  const existingSkills = mergedProfile.skills.flatMap((group) => group.skills);
+  const existingSet = new Set(existingSkills.map((skill) => normalizeKey(skill)));
+
+  const fromTech = uniq([
+    ...mergedProfile.experience.flatMap((item) => item.technologies || []),
+    ...mergedProfile.projects.flatMap((item) => item.technologies || []),
+  ]).filter((skill) => skill.length >= 2);
+
+  const jdTerms = uniq([
+    ...(jdAnalysis.topAtsTerms || jdAnalysis.atsKeywords.map((item) => item.keyword)),
+    ...jdAnalysis.mustHaveSkills,
+    ...jdAnalysis.preferredSkills,
+    ...jdAnalysis.inferredSynonyms,
+  ]).filter((term) => term.length >= 2 && term.length <= 40);
+
+  const rawText = resumeParse?.rawText || '';
+  const fromRawText = rawText
+    ? jdTerms.filter((term) => containsTerm(rawText, term))
+    : [];
+
+  const dynamicSkills = uniq([...fromTech, ...fromRawText])
+    .filter((skill) => !existingSet.has(normalizeKey(skill)))
+    .slice(0, 36);
+
+  if (dynamicSkills.length === 0) {
+    return mergedProfile;
   }
 
-  const parsed = resumeParse.parsedProfile;
+  const source = inferParseSource(resumeParse);
 
-  const merged: MergedProfile = {
-    ...baseProfile,
-    education: (parsed.education && parsed.education.length > 0) ? parsed.education : baseProfile.education,
-    experience: mergeExperience(baseProfile.experience, parsed.experience || [], conflicts),
-    projects: mergeProjects(baseProfile.projects, parsed.projects || [], conflicts),
-    skills: mergeSkills(baseProfile.skills, parsed.skills || []),
-    conflicts,
+  return {
+    ...mergedProfile,
+    skills: [
+      ...mergedProfile.skills,
+      {
+        id: 'auto-derived-skills',
+        label: 'Auto-Derived Skills',
+        skills: dynamicSkills,
+        provenance: {
+          source,
+          confidence: 0.7,
+          note: 'Inferred from uploaded/manual resume text and role-targeted terms.',
+        },
+      },
+    ],
   };
+}
 
-  return merged;
+function buildDefaultItemSelection(rankedItems: RankedItem[]): { selectedExperienceIds: string[]; selectedProjectIds: string[] } {
+  const rankedExperience = rankedItems
+    .filter((item) => item.itemType === 'experience')
+    .sort((a, b) => b.score - a.score);
+
+  const rankedProjects = rankedItems
+    .filter((item) => item.itemType === 'project')
+    .sort((a, b) => b.score - a.score);
+
+  const availableTotal = rankedExperience.length + rankedProjects.length;
+  const desiredTotal = Math.min(MAX_TOTAL_SELECTED_ITEMS, availableTotal);
+
+  if (desiredTotal === 0) {
+    return { selectedExperienceIds: [], selectedProjectIds: [] };
+  }
+
+  const strictMixPossible = rankedExperience.length >= MIN_ITEMS_PER_TYPE && rankedProjects.length >= MIN_ITEMS_PER_TYPE && desiredTotal >= 4;
+
+  const selectedExperience: RankedItem[] = strictMixPossible
+    ? rankedExperience.slice(0, MIN_ITEMS_PER_TYPE)
+    : [];
+
+  const selectedProjects: RankedItem[] = strictMixPossible
+    ? rankedProjects.slice(0, MIN_ITEMS_PER_TYPE)
+    : [];
+
+  const selectedIds = new Set<string>([
+    ...selectedExperience.map((item) => item.id),
+    ...selectedProjects.map((item) => item.id),
+  ]);
+
+  const remainder = [...rankedExperience, ...rankedProjects]
+    .filter((item) => !selectedIds.has(item.id))
+    .sort((a, b) => b.score - a.score);
+
+  const perTypeCap = strictMixPossible ? MAX_ITEMS_PER_TYPE : MAX_TOTAL_SELECTED_ITEMS;
+
+  while ((selectedExperience.length + selectedProjects.length) < desiredTotal && remainder.length > 0) {
+    const nextIdx = remainder.findIndex((candidate) => {
+      if (candidate.itemType === 'experience') {
+        return selectedExperience.length < perTypeCap;
+      }
+      return selectedProjects.length < perTypeCap;
+    });
+
+    if (nextIdx === -1) break;
+
+    const [candidate] = remainder.splice(nextIdx, 1);
+    if (candidate.itemType === 'experience') {
+      selectedExperience.push(candidate);
+    } else {
+      selectedProjects.push(candidate);
+    }
+  }
+
+  return {
+    selectedExperienceIds: selectedExperience.slice(0, MAX_ITEMS_PER_TYPE).map((item) => item.id),
+    selectedProjectIds: selectedProjects.slice(0, MAX_ITEMS_PER_TYPE).map((item) => item.id),
+  };
 }
 
 function scoreTextAgainstKeywords(text: string, keywords: string[]): { score: number; overlap: string[] } {
@@ -296,12 +415,18 @@ function rankWithEvidenceMap(
     const ev = byItem.get(exp.id);
     const score = ev ? ev.strength * 100 : 0;
     const labels = ev && ev.matched.length >= 3 ? ['high evidence match'] : ev && ev.matched.length >= 1 ? ['solid match'] : ['transferable'];
+    const sourceLabel = exp.provenance.source === 'uploaded_resume'
+      ? 'resume-supported'
+      : exp.provenance.source === 'manual_input'
+        ? 'manual-context-supported'
+        : 'website-supported';
+
     ranked.push({
       id: exp.id,
       itemType: 'experience',
       score: Number(score.toFixed(2)),
       labels: labels.slice(0, 3),
-      explanation: ev?.reason ?? 'Transferable',
+      explanation: `${ev?.reason ?? 'Transferable'}; ${sourceLabel}${ev?.matched.length ? `; keywords: ${ev.matched.slice(0, 3).join(', ')}` : ''}`,
     });
   }
 
@@ -309,12 +434,18 @@ function rankWithEvidenceMap(
     const ev = byItem.get(proj.id);
     const score = ev ? ev.strength * 100 : 0;
     const labels = ev && ev.matched.length >= 2 ? ['high evidence match'] : ev ? ['solid match'] : ['relevant project'];
+    const sourceLabel = proj.provenance.source === 'uploaded_resume'
+      ? 'resume-supported'
+      : proj.provenance.source === 'manual_input'
+        ? 'manual-context-supported'
+        : 'website-supported';
+
     ranked.push({
       id: proj.id,
       itemType: 'project',
       score: Number(score.toFixed(2)),
       labels: labels.slice(0, 3),
-      explanation: ev?.reason ?? 'Relevant',
+      explanation: `${ev?.reason ?? 'Relevant'}; ${sourceLabel}${ev?.matched.length ? `; keywords: ${ev.matched.slice(0, 3).join(', ')}` : ''}`,
     });
   }
 
@@ -333,39 +464,156 @@ function rankWithEvidenceMap(
   return ranked.sort((a, b) => b.score - a.score);
 }
 
+function tokenOverlapCount(skill: string, terms: string[]): number {
+  const skillTokens = new Set(tokenize(skill));
+  if (skillTokens.size === 0) return 0;
+
+  let maxOverlap = 0;
+  for (const term of terms) {
+    const termTokens = tokenize(term);
+    if (termTokens.length === 0) continue;
+
+    let hit = 0;
+    for (const token of termTokens) {
+      if (skillTokens.has(token)) hit += 1;
+    }
+
+    maxOverlap = Math.max(maxOverlap, hit);
+  }
+
+  return maxOverlap;
+}
+
+function buildAutoSkillSelection(
+  mergedProfile: MergedProfile,
+  jdAnalysis: JobDescriptionAnalysis,
+  selectedExperienceIds: string[],
+  selectedProjectIds: string[],
+): string[] {
+  const mustSet = new Set(jdAnalysis.mustHaveSkills.map((item) => normalizeKey(item)));
+  const preferredSet = new Set(jdAnalysis.preferredSkills.map((item) => normalizeKey(item)));
+  const topSet = new Set((jdAnalysis.topAtsTerms || jdAnalysis.atsKeywords.map((item) => item.keyword)).map((item) => normalizeKey(item)));
+  const synonymSet = new Set(jdAnalysis.inferredSynonyms.map((item) => normalizeKey(item)));
+
+  const selectedTech = new Set([
+    ...mergedProfile.experience
+      .filter((item) => selectedExperienceIds.includes(item.id))
+      .flatMap((item) => item.technologies),
+    ...mergedProfile.projects
+      .filter((item) => selectedProjectIds.includes(item.id))
+      .flatMap((item) => item.technologies),
+  ].map((item) => normalizeKey(item)));
+
+  const profileTextBlob = [
+    ...mergedProfile.experience.flatMap((item) => [item.summary, ...(item.bullets || []), ...item.technologies]),
+    ...mergedProfile.projects.flatMap((item) => [item.summary, ...(item.bullets || []), ...item.technologies]),
+    ...mergedProfile.skills.flatMap((group) => group.skills),
+  ].join(' ').toLowerCase();
+
+  const candidateSkills = uniq([
+    ...mergedProfile.skills.flatMap((group) => group.skills),
+    ...mergedProfile.experience.flatMap((item) => item.technologies),
+    ...mergedProfile.projects.flatMap((item) => item.technologies),
+    ...jdAnalysis.mustHaveSkills,
+    ...jdAnalysis.preferredSkills,
+  ]).filter((skill) => skill.length >= 2 && skill.length <= 40);
+
+  const scored = candidateSkills
+    .map((skill) => {
+      const normalized = normalizeKey(skill);
+      let score = 0;
+
+      if (mustSet.has(normalized)) score += 80;
+      if (preferredSet.has(normalized)) score += 55;
+      if (topSet.has(normalized)) score += 40;
+      if (synonymSet.has(normalized)) score += 20;
+      if (selectedTech.has(normalized)) score += 22;
+
+      const overlapMust = tokenOverlapCount(skill, jdAnalysis.mustHaveSkills);
+      const overlapPreferred = tokenOverlapCount(skill, jdAnalysis.preferredSkills);
+      score += overlapMust * 12;
+      score += overlapPreferred * 8;
+
+      if (containsTerm(profileTextBlob, skill)) score += 6;
+
+      return { skill, score };
+    })
+    .filter((entry) => entry.score > 0)
+    .sort((a, b) => b.score - a.score || a.skill.localeCompare(b.skill));
+
+  const dedupedSkills: string[] = [];
+  const seen = new Set<string>();
+  for (const entry of scored) {
+    const key = normalizeKey(entry.skill);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    dedupedSkills.push(entry.skill);
+  }
+
+  const topSkills = dedupedSkills.slice(0, MAX_AUTO_SELECTED_SKILLS);
+
+  if (topSkills.length > 0) {
+    return topSkills;
+  }
+
+  return mergedProfile.skills.flatMap((group) => group.skills).slice(0, MAX_AUTO_SELECTED_SKILLS);
+}
+
+export function mergeProfiles(baseProfile: Profile, resumeParse: ResumeParseResult | null): MergedProfile {
+  const conflicts: ConflictItem[] = [];
+
+  if (!resumeParse?.parsedProfile) {
+    return {
+      ...baseProfile,
+      conflicts,
+    };
+  }
+
+  const parsed = resumeParse.parsedProfile;
+
+  const merged: MergedProfile = {
+    ...baseProfile,
+    education: (parsed.education && parsed.education.length > 0) ? parsed.education : baseProfile.education,
+    experience: mergeExperience(baseProfile.experience, parsed.experience || [], conflicts),
+    projects: mergeProjects(baseProfile.projects, parsed.projects || [], conflicts),
+    skills: mergeSkills(baseProfile.skills, parsed.skills || []),
+    conflicts,
+  };
+
+  return merged;
+}
+
 export async function buildMergeRankResponse(
   baseProfile: Profile,
   resumeParse: ResumeParseResult | null,
   jdAnalysis: JobDescriptionAnalysis,
+  options?: { llmConfig?: LLMConfig | null },
 ): Promise<MergeRankResponse> {
-  const mergedProfile = mergeProfiles(baseProfile, resumeParse);
+  const mergedProfile = augmentSkillsWithDynamicSignals(
+    mergeProfiles(baseProfile, resumeParse),
+    resumeParse,
+    jdAnalysis,
+  );
+
   const evidenceMap = buildEvidenceMap(jdAnalysis, mergedProfile);
   const rankedItems = rankWithEvidenceMap(mergedProfile, jdAnalysis, evidenceMap);
 
-  const selectedExperienceIds = rankedItems
-    .filter((item) => item.itemType === 'experience')
-    .slice(0, 4)
-    .map((item) => item.id);
+  const {
+    selectedExperienceIds,
+    selectedProjectIds,
+  } = buildDefaultItemSelection(rankedItems);
 
-  const selectedProjectIds = rankedItems
-    .filter((item) => item.itemType === 'project')
-    .slice(0, 3)
-    .map((item) => item.id);
+  const selectedSkillNames = buildAutoSkillSelection(
+    mergedProfile,
+    jdAnalysis,
+    selectedExperienceIds,
+    selectedProjectIds,
+  );
 
-  const keywordSet = new Set([
-    ...(jdAnalysis.topAtsTerms || jdAnalysis.atsKeywords.map((k) => k.keyword)),
-    ...jdAnalysis.mustHaveSkills,
-    ...jdAnalysis.preferredSkills,
-  ].map((s) => normalizeKey(s)));
-
-  const selectedSkillNames = mergedProfile.skills
-    .flatMap((group) => group.skills)
-    .filter((skill) => keywordSet.has(normalizeKey(skill)));
-
-  let styleProfile;
+  let styleProfile: StyleProfile | undefined;
   try {
     const rawText = resumeParse?.rawText || mergedProfile.experience.flatMap((e) => e.bullets || []).join('\n') || mergedProfile.basics.bio;
-    styleProfile = rawText.length > 100 ? await extractStyleProfile(rawText) : undefined;
+    styleProfile = rawText.length > 100 ? await extractStyleProfile(rawText, options?.llmConfig) : undefined;
   } catch {
     styleProfile = undefined;
   }
@@ -376,10 +624,13 @@ export async function buildMergeRankResponse(
     selectionState: {
       selectedExperienceIds,
       selectedProjectIds,
-      selectedSkillNames: uniq(selectedSkillNames).slice(0, 20),
+      selectedSkillNames: uniq(selectedSkillNames).slice(0, MAX_AUTO_SELECTED_SKILLS),
       aggressiveness: 'balanced',
     },
     styleProfile,
     evidenceMap,
+    llmUsage: {
+      styleProfile: styleProfile?.llmUsage,
+    },
   };
 }

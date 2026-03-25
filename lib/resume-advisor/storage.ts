@@ -4,6 +4,7 @@ import { openDB } from 'idb';
 import {
   GeneratePreviewResponse,
   JobDescriptionAnalysis,
+  LLMConfig,
   MergeRankResponse,
   ResumeParseResult,
 } from '@/lib/resume-advisor/types';
@@ -17,6 +18,7 @@ export interface AdvisorSessionRecord {
   updatedAt: string;
   title: string;
   jdText: string;
+  llmConfig?: LLMConfig;
   jdAnalysis?: JobDescriptionAnalysis;
   resumeParseResult?: ResumeParseResult;
   mergeRankResult?: MergeRankResponse;

@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { completeJson } from '@/lib/resume-advisor/groq';
-import { JobDescriptionAnalysis, JDKeywordTaxonomy } from '@/lib/resume-advisor/types';
+import { completeJsonWithMeta, getConfiguredLLM } from '@/lib/resume-advisor/groq';
+import { JobDescriptionAnalysis, JDKeywordTaxonomy, LLMConfig, LLMUsage } from '@/lib/resume-advisor/types';
 import { filterATSKeywords, filterKeywordList } from '@/lib/resume-advisor/pipeline/filters';
 import { extractTopTerms, normalizeText, uniq } from '@/lib/resume-advisor/pipeline/text';
 
@@ -72,7 +72,15 @@ function filterTaxonomy(tax: JDKeywordTaxonomy | undefined): JDKeywordTaxonomy |
   return Object.keys(out).length > 0 ? out : undefined;
 }
 
-function fallbackAnalyze(jdText: string): JobDescriptionAnalysis {
+function fallbackAnalyze(jdText: string, llmConfig?: LLMConfig | null): JobDescriptionAnalysis {
+  const configured = getConfiguredLLM(llmConfig);
+  const llmUsage: LLMUsage = {
+    provider: configured.provider,
+    model: configured.model,
+    stage: 'jdAnalysis',
+    source: 'fallback',
+    note: 'Fallback heuristics were used because LLM JSON output was unavailable.',
+  };
   const lines = jdText.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
   const mustHaveSkills = lines
     .filter((line) => /must|required|need to|minimum/i.test(line))
@@ -105,6 +113,7 @@ function fallbackAnalyze(jdText: string): JobDescriptionAnalysis {
     preferredSkills: uniq(filterKeywordList(preferredSkills, { minLength: 2 })),
     missingQualifications: [],
     inferredSynonyms: uniq(inferredSynonyms),
+    llmUsage,
   };
 }
 
@@ -119,7 +128,10 @@ Critical rules:
 - Output strict JSON only. No markdown. No explanation outside JSON.
 - Favor precision over recall for top-priority ATS keywords. If a term is generic or low-signal, omit it.`;
 
-export async function analyzeJobDescription(jdText: string): Promise<JobDescriptionAnalysis> {
+export async function analyzeJobDescription(
+  jdText: string,
+  llmConfig?: LLMConfig | null,
+): Promise<JobDescriptionAnalysis> {
   const cleanJd = normalizeText(jdText);
 
   const user = [
@@ -151,14 +163,14 @@ export async function analyzeJobDescription(jdText: string): Promise<JobDescript
   ].join('\n');
 
   try {
-    const raw = await completeJson<z.infer<typeof analysisSchema>>({
+    const { data, meta } = await completeJsonWithMeta<z.infer<typeof analysisSchema>>({
       system: JD_ANALYZER_SYSTEM,
       user,
       temperature: 0.1,
       maxTokens: 2200,
-    });
+    }, llmConfig);
 
-    const parsed = analysisSchema.parse(raw);
+    const parsed = analysisSchema.parse(data);
 
     const mustHaveSkills = uniq(filterKeywordList(parsed.mustHaveSkills, { minLength: 2 }));
     const preferredSkills = uniq(filterKeywordList(parsed.preferredSkills, { minLength: 2 }));
@@ -196,8 +208,14 @@ export async function analyzeJobDescription(jdText: string): Promise<JobDescript
       domain: parsed.domain?.trim(),
       taxonomy,
       topAtsTerms: filterKeywordList(topAtsTerms, { minLength: 2 }),
+      llmUsage: {
+        provider: meta.provider,
+        model: meta.model,
+        stage: 'jdAnalysis',
+        source: 'llm',
+      },
     };
   } catch {
-    return fallbackAnalyze(cleanJd);
+    return fallbackAnalyze(cleanJd, llmConfig);
   }
 }
