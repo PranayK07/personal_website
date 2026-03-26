@@ -43,6 +43,7 @@ export default function SiteHeader({
                 key={item.id}
                 href={item.href}
                 data-active={active}
+                aria-current={active ? 'page' : undefined}
                 className={`ds-nav-link pt-1 text-[0.65rem] font-medium uppercase tracking-[0.18em] ${active
                     ? 'text-[var(--on-surface)]'
                     : 'text-[var(--secondary)] hover:text-[var(--on-surface)]'

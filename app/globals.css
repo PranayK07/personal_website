@@ -141,25 +141,6 @@ html[data-site-revealed="true"] section[id] {
   }
 }
 
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-
-@keyframes heroRevealContent {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 @keyframes siteChromeIn {
   from {
     opacity: 0;
@@ -171,17 +152,8 @@ html[data-site-revealed="true"] section[id] {
   }
 }
 
-.hero-reveal-enter {
-  animation: heroRevealContent var(--duration-ui) var(--ease-snap) both;
-}
-
 /* Reduced motion: disable hero scroll animations entirely */
 @media (prefers-reduced-motion: reduce) {
-  .hero-reveal-enter {
-    animation: none;
-  }
-
-  /* Force all framer-motion transitions to be instant */
   [data-framer-motion] {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
@@ -288,7 +260,6 @@ body {
 .ds-btn-primary:disabled {
   opacity: 0.35;
   cursor: not-allowed;
-  pointer-events: none;
 }
 
 /* Secondary — sweeping fill interaction */

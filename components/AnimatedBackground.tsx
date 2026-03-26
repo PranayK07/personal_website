@@ -150,6 +150,7 @@ export default function AnimatedBackground() {
   return (
     <canvas
       ref={canvasRef}
+      aria-hidden="true"
       className="fixed top-0 left-0 w-full h-full pointer-events-none -z-10"
       style={{ opacity: 0.6 }}
     />
