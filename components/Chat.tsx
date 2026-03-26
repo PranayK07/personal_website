@@ -3,6 +3,15 @@
 import { useState, useRef, useEffect, ReactNode } from 'react';
 import { MessageCircle, X, Send } from 'lucide-react';
 
+function isSafeUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return ['http:', 'https:', 'mailto:'].includes(parsed.protocol);
+  } catch {
+    return false;
+  }
+}
+
 function renderMarkdownLinks(text: string): ReactNode {
   const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
   const parts: ReactNode[] = [];
@@ -19,17 +28,21 @@ function renderMarkdownLinks(text: string): ReactNode {
 
     const linkText = match[1];
     const url = match[2];
-    parts.push(
-      <a
-        key={`link-${keyIndex++}`}
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-[var(--primary)] underline decoration-[var(--ghost-border)] underline-offset-2 transition-[text-decoration-color] duration-150 [transition-timing-function:var(--ease-snap)] hover:decoration-[var(--primary)]"
-      >
-        {linkText}
-      </a>
-    );
+    if (isSafeUrl(url)) {
+      parts.push(
+        <a
+          key={`link-${keyIndex++}`}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[var(--primary)] underline decoration-[var(--ghost-border)] underline-offset-2 transition-[text-decoration-color] duration-150 [transition-timing-function:var(--ease-snap)] hover:decoration-[var(--primary)]"
+        >
+          {linkText}
+        </a>
+      );
+    } else {
+      parts.push(<span key={`link-${keyIndex++}`}>{linkText}</span>);
+    }
 
     lastIndex = match.index + match[0].length;
   }

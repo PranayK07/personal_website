@@ -7,6 +7,8 @@ interface Experience {
   company: string;
   location: string;
   date: string;
+  /** ISO-8601 start date (year-month) used for the <time dateTime> attribute */
+  isoDate: string;
   description: string;
   technologies: string[];
 }
@@ -17,6 +19,7 @@ const experiences: Experience[] = [
     company: 'LLM Agent-Tool Interaction & Security Research Group',
     location: 'Storrs, CT',
     date: 'Jan 2026 – Present',
+    isoDate: '2026-01',
     description:
       'Conducted security research on agentic AI systems, synthesizing 10+ foundational papers into a unified threat model covering prompt injection, memory poisoning, credential leakage, and unauthorized autonomous actions. Performed red-team analysis of OpenClaw agents, reproducing real-world incidents such as the Shellraiser token launch and malicious agent tooling, and translating observed failures into concrete security tests and mitigations.',
     technologies: ['Python', 'LLM Agents', 'Red Teaming', 'Threat Modeling', 'AI Safety'],
@@ -26,6 +29,7 @@ const experiences: Experience[] = [
     company: 'Hillside Venture',
     location: 'Storrs, CT',
     date: 'Oct 2025 – Present',
+    isoDate: '2025-10',
     description:
       'Conducted quantitative startup analysis for a student-run venture capital fund, sourcing and evaluating 40+ early-stage fintech, AI, and SaaS companies using data-driven market research and competitive analysis. Built 3-statement financial models, unit economics, and DCF valuations for 10+ startups, applying KPI benchmarking, growth decomposition, and sensitivity analysis to support high-conviction investment decisions.',
     technologies: [],
@@ -35,6 +39,7 @@ const experiences: Experience[] = [
     company: 'University of Connecticut Undergraduate Research',
     location: 'Storrs, CT',
     date: 'May 2024 – Aug 2024',
+    isoDate: '2024-05',
     description:
       'Conducted research on data-driven biometric cryptography solutions, co-developing Face Recognition Privacy models with 92% accuracy using ResNet, DenseNet, and SVMs. Engineered CUDA-accelerated feature extraction algorithms reducing runtime by 40% while processing 400K+ structured and unstructured samples. Documented ML architectures achieving 90–94% accuracy, enhancing data communication and automation.',
     technologies: ['PyTorch', 'scikit-learn', 'CUDA', 'Python', 'Machine Learning', 'OpenCV', 'ETL', 'Git'],
@@ -44,6 +49,7 @@ const experiences: Experience[] = [
     company: 'The McCarron Group, University of Connecticut',
     location: 'Storrs, CT',
     date: 'May 2023 – Sep 2023',
+    isoDate: '2023-05',
     description:
       'Automated Python-based data collection and visualization workflows for high-precision laser calibration experiments. Applied statistical regression models to improve measurement accuracy and instrument control. Supported demonstrations and reports for 50+ researchers, improving productivity and data organization within the research team.',
     technologies: ['Python', 'Matplotlib', 'Pandas', 'NumPy', 'Data Analysis', 'SciPy', 'SQL'],
@@ -53,6 +59,7 @@ const experiences: Experience[] = [
     company: 'Bobcat Robotics – FRC Team 177',
     location: 'South Windsor, CT',
     date: '2023 – 2025',
+    isoDate: '2023',
     description:
       'Engineered a modular robotics software library with intuitive user interfaces and scalable architecture. Collaborated with the robotics team to translate functional requirements into efficient control algorithms. Authored documentation ensuring maintainability and extensibility for future teams.',
     technologies: ['Java', 'Git', 'Python', 'JavaScript', 'Robotics', 'Motion Control', 'Team Leadership'],
@@ -75,7 +82,7 @@ function ExperienceBlock({ experience }: { experience: Experience }) {
         <div className="flex shrink-0 flex-col items-start gap-1 sm:items-end sm:pt-0.5">
           <time
             className="font-mono-label text-[0.65rem] uppercase tracking-[0.12em] text-[var(--secondary)]"
-            dateTime={experience.date}
+            dateTime={experience.isoDate}
           >
             {experience.date}
           </time>
