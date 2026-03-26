@@ -5,58 +5,78 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
 
 type SiteRevealContextValue = {
-  revealed: boolean;
+  /** 0 = hero fullscreen, 1 = fully scrolled past hero */
+  heroProgress: number;
+  /** true once the user has scrolled past the hero section */
+  pastHero: boolean;
   reveal: () => void;
 };
 
 const SiteRevealContext = createContext<SiteRevealContextValue | null>(null);
 
-const SCROLL_REVEAL_PX = 36;
+function clamp01(v: number) {
+  return Math.min(1, Math.max(0, v));
+}
 
 export function SiteRevealProvider({ children }: { children: ReactNode }) {
-  const [revealed, setRevealed] = useState(false);
+  const [heroProgress, setHeroProgress] = useState(0);
+  const [pastHero, setPastHero] = useState(false);
+  const frameRef = useRef(0);
 
   const reveal = useCallback(() => {
-    setRevealed((prev) => {
-      if (prev) return prev;
-      if (typeof document !== 'undefined') {
-        document.documentElement.dataset.siteRevealed = 'true';
-      }
-      return true;
-    });
+    if (typeof window === 'undefined') return;
+    window.scrollTo({ top: 80, behavior: 'smooth' });
   }, []);
 
   useEffect(() => {
-    if (revealed) return;
+    const HERO_TRANSITION_HEIGHT = typeof window !== 'undefined' ? window.innerHeight * 0.65 : 600;
 
-    const onScroll = () => {
-      if (window.scrollY > SCROLL_REVEAL_PX) reveal();
+    const update = () => {
+      frameRef.current = 0;
+      const scrollY = window.scrollY;
+      const heroEl = document.getElementById('home');
+
+      // Progress through the hero section (0 = at top, 1 = name should be in full layout position)
+      const progress = clamp01(scrollY / HERO_TRANSITION_HEIGHT);
+      setHeroProgress(progress);
+
+      // Past hero = hero bottom has left the viewport
+      const past = heroEl ? heroEl.getBoundingClientRect().bottom <= 0 : false;
+      setPastHero(past);
+
+      // Sync CSS var for non-React consumers
+      document.documentElement.style.setProperty('--hero-progress', progress.toFixed(4));
+      if (scrollY > 4) {
+        document.documentElement.dataset.siteRevealed = 'true';
+      } else {
+        document.documentElement.removeAttribute('data-site-revealed');
+      }
     };
 
-    const onInteract = () => reveal();
+    const request = () => {
+      if (frameRef.current) return;
+      frameRef.current = window.requestAnimationFrame(update);
+    };
 
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('wheel', onInteract, { passive: true });
-    window.addEventListener('pointerdown', onInteract);
-    window.addEventListener('keydown', onInteract);
-    window.addEventListener('touchmove', onInteract, { passive: true });
+    request();
+    window.addEventListener('scroll', request, { passive: true });
+    window.addEventListener('resize', request, { passive: true });
 
     return () => {
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('wheel', onInteract);
-      window.removeEventListener('pointerdown', onInteract);
-      window.removeEventListener('keydown', onInteract);
-      window.removeEventListener('touchmove', onInteract);
+      if (frameRef.current) window.cancelAnimationFrame(frameRef.current);
+      window.removeEventListener('scroll', request);
+      window.removeEventListener('resize', request);
     };
-  }, [revealed, reveal]);
+  }, []);
 
   return (
-    <SiteRevealContext.Provider value={{ revealed, reveal }}>
+    <SiteRevealContext.Provider value={{ heroProgress, pastHero, reveal }}>
       {children}
     </SiteRevealContext.Provider>
   );
@@ -64,8 +84,6 @@ export function SiteRevealProvider({ children }: { children: ReactNode }) {
 
 export function useSiteReveal() {
   const ctx = useContext(SiteRevealContext);
-  if (!ctx) {
-    throw new Error('useSiteReveal must be used within SiteRevealProvider');
-  }
+  if (!ctx) throw new Error('useSiteReveal must be used within SiteRevealProvider');
   return ctx;
 }

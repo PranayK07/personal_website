@@ -1,13 +1,13 @@
 import HomePageContent from '@/components/HomePageContent';
 import Footer from '@/components/Footer';
 import PortfolioShell from '@/components/PortfolioShell';
-import StarfieldBackdrop from '@/components/StarfieldBackdrop';
+import MonolithBackdrop from '@/components/MonolithBackdrop';
 import { SiteRevealProvider } from '@/components/SiteRevealContext';
 
 export default function Home() {
   return (
     <SiteRevealProvider>
-      <StarfieldBackdrop />
+      <MonolithBackdrop />
       <PortfolioShell>
         <main>
           <HomePageContent />

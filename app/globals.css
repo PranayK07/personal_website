@@ -1,27 +1,49 @@
 @import "tailwindcss";
 
+/* Monolith Precision — monochrome drafting-table system, refined */
 :root {
-  /* Warm editorial on deep ink — pairs with starfield without “neon dev” clichés */
-  --bg: oklch(0.14 0.012 75);
-  --bg-elevated: oklch(0.17 0.012 75);
-  --fg: oklch(0.96 0.02 85);
-  --muted: oklch(0.62 0.02 80);
-  --accent: oklch(0.72 0.1 72);
-  --accent-hover: oklch(0.78 0.11 72);
-  --accent-muted: color-mix(in oklch, var(--accent) 14%, transparent);
-  --line: oklch(0.32 0.02 75);
-  --site-header-h: 3.75rem;
-  --rail-width: 4.75rem;
-  --content-max: 72rem;
+  --surface: #121214; /* Tinted cool gray for a quieter aesthetic */
+  --surface-container-lowest: #0c0c0e;
+  --surface-container-low: #18181b;
+  --surface-container-high: #27272a;
+  --surface-bright: #27272a;
+  --outline: #71717a; /* Neutral cool gray */
+  --outline-variant: #3f3f46;
+  --ghost-border: rgba(63, 63, 70, 0.4); /* Stronger but quieter border */
+  --primary: #f4f4f5;
+  --primary-container: #d4d4d8;
+  --on-primary: #09090b;
+  --on-surface: #fafafa;
+  --secondary: #a1a1aa; /* Softer, slightly warmer secondary text */
+
+  --bg: var(--surface);
+  --fg: var(--on-surface);
+  --muted: var(--secondary);
+  --line: color-mix(in srgb, var(--outline-variant) 40%, transparent);
+  --accent: var(--primary);
+  --accent-hover: var(--primary-container);
+  --accent-muted: color-mix(in srgb, var(--primary) 12%, transparent);
+
+  --site-header-h: 4rem;
+  --content-max: 80rem;
+
+  --ease-snap: cubic-bezier(0.2, 1, 0.3, 1);
+  --duration-fast: 150ms;
+  --duration-ui: 180ms;
+
+  --spacing-section: clamp(5rem, 12vw, 8.5rem);
 }
 
-/* next/font sets --font-display and --font-body on <html> */
 .font-display {
-  font-family: var(--font-display), Georgia, "Times New Roman", serif;
+  font-family: var(--font-display), system-ui, sans-serif;
 }
 
 .font-body {
-  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+
+.font-mono-label {
+  font-family: var(--font-mono), ui-monospace, monospace;
 }
 
 * {
@@ -40,21 +62,30 @@ html {
 
 body {
   margin: 0;
-  background: var(--bg);
-  color: var(--fg);
-  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  background: var(--surface);
+  color: var(--on-surface);
+  font-family: var(--font-body), system-ui, sans-serif;
   font-size: 1rem;
-  line-height: 1.65;
+  line-height: 1.6;
   font-weight: 400;
   overflow-x: clip;
 }
 
 ::selection {
-  background: color-mix(in oklch, var(--accent) 35%, transparent);
-  color: var(--fg);
+  background: color-mix(in srgb, var(--primary) 18%, transparent);
+  color: var(--on-surface);
 }
 
-/* Offset anchor jumps only after header chrome is shown */
+/* Dot grid texture — drafting table */
+.monolith-backdrop-grid {
+  background-color: var(--surface);
+  background-image: radial-gradient(
+    rgba(255, 255, 255, 0.06) 1px,
+    transparent 1px
+  );
+  background-size: 24px 24px;
+}
+
 section[id] {
   scroll-margin-top: 0;
 }
@@ -63,12 +94,12 @@ html[data-site-revealed="true"] section[id] {
   scroll-margin-top: calc(var(--site-header-h) + 0.75rem);
 }
 
-/* Scroll-triggered visibility (used by section blocks) */
+/* Scroll reveals — snappy */
 .scroll-fade-in {
   opacity: 0;
-  transform: translateY(12px);
-  transition: opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  transform: translateY(8px);
+  transition: opacity var(--duration-fast) var(--ease-snap),
+    transform var(--duration-fast) var(--ease-snap);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -84,11 +115,10 @@ html[data-site-revealed="true"] section[id] {
   transform: translateY(0);
 }
 
-/* Chat message entrance */
 @keyframes messageSlideIn {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;
@@ -97,7 +127,7 @@ html[data-site-revealed="true"] section[id] {
 }
 
 .animate-messageSlideIn {
-  animation: messageSlideIn 0.28s ease-out;
+  animation: messageSlideIn 0.2s var(--ease-snap);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -114,11 +144,10 @@ html[data-site-revealed="true"] section[id] {
   display: none;
 }
 
-/* Landing reveal: minimal hero → full site */
 @keyframes heroRevealContent {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -129,7 +158,7 @@ html[data-site-revealed="true"] section[id] {
 @keyframes siteChromeIn {
   from {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateY(-8px);
   }
   to {
     opacity: 1;
@@ -138,22 +167,149 @@ html[data-site-revealed="true"] section[id] {
 }
 
 .hero-reveal-enter {
-  animation: heroRevealContent 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: heroRevealContent var(--duration-ui) var(--ease-snap) both;
 }
 
-.site-chrome-enter {
-  animation: siteChromeIn 0.45s ease-out both;
-}
-
+/* Reduced motion: disable hero scroll animations entirely */
 @media (prefers-reduced-motion: reduce) {
-  .hero-reveal-enter,
-  .site-chrome-enter {
+  .hero-reveal-enter {
     animation: none;
+  }
+
+  /* Force all framer-motion transitions to be instant */
+  [data-framer-motion] {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
   }
 }
 
-/* Thin themed scrollbar (body) */
 body {
-  scrollbar-color: color-mix(in oklch, var(--accent) 40%, transparent) var(--bg);
+  scrollbar-color: color-mix(in srgb, var(--outline) 35%, transparent) var(--surface);
   scrollbar-width: thin;
+}
+
+/* Ghost chip — hairline etch */
+.ds-chip {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--ghost-border);
+  padding: 0.35rem 0.7rem;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--secondary);
+  background: transparent;
+  border-radius: 0;
+  transition: border-color var(--duration-fast) var(--ease-snap),
+    color var(--duration-fast) var(--ease-snap),
+    background-color var(--duration-fast) var(--ease-snap);
+}
+
+.ds-chip:hover {
+  border-color: color-mix(in srgb, var(--outline) 50%, transparent);
+  color: var(--on-surface);
+}
+
+/* Primary CTA — sharp, smooth interaction */
+.ds-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.65rem 1.25rem;
+  font-size: 0.8125rem;
+  font-weight: 500; /* Dropped from 600 for quieter typography */
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--on-primary);
+  background: var(--primary);
+  border: none;
+  border-radius: 0;
+  transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1),
+    color var(--duration-fast) var(--ease-snap),
+    background var(--duration-fast) var(--ease-snap),
+    box-shadow 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.ds-btn-primary:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.ds-btn-primary:hover {
+  transform: translateY(-2px);
+  color: var(--on-surface);
+  background: var(--surface-container-high);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.ds-btn-primary:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Secondary — hairline */
+.ds-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.65rem 1.25rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--on-surface);
+  background: transparent;
+  border: 1px solid var(--outline);
+  border-radius: 0;
+  transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1),
+    border-color var(--duration-fast) var(--ease-snap),
+    color var(--duration-fast) var(--ease-snap);
+}
+
+.ds-btn-secondary:active {
+  transform: translateY(2px);
+}
+
+.ds-btn-secondary:hover {
+  transform: translateY(-2px);
+  border-color: var(--primary);
+}
+
+/* Section label + title pattern */
+.ds-section-meta {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--secondary);
+}
+
+.ds-section-title {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: clamp(1.5rem, 3.5vw, 2rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: var(--on-surface);
+}
+
+/* Card surface — quieter with subtle interaction */
+.ds-card {
+  background: var(--surface-container-low);
+  border: 1px solid var(--ghost-border);
+  border-radius: 0;
+  transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1),
+    background-color var(--duration-ui) var(--ease-snap),
+    border-color var(--duration-ui) var(--ease-snap);
+}
+
+.ds-card:hover {
+  background: var(--surface-bright);
+  border-color: var(--outline-variant);
+  transform: translateY(-2px);
 }

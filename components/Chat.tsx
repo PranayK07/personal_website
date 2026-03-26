@@ -25,7 +25,7 @@ function renderMarkdownLinks(text: string): ReactNode {
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-[var(--accent)] underline decoration-[var(--line)] underline-offset-2 transition-colors hover:decoration-[var(--accent)]"
+        className="text-[var(--primary)] underline decoration-[var(--ghost-border)] underline-offset-2 transition-[text-decoration-color] duration-150 [transition-timing-function:var(--ease-snap)] hover:decoration-[var(--primary)]"
       >
         {linkText}
       </a>
@@ -83,6 +83,7 @@ export default function Chat({
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatBoxRef = useRef<HTMLDivElement>(null);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -125,8 +126,6 @@ export default function Chat({
   }, [isOpen, fullPage]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-
     const userContent = inputValue.trim();
     if (!userContent) return;
 
@@ -144,9 +143,13 @@ export default function Chat({
     setInputValue('');
 
     setTimeout(() => {
-      setMessages((prev) =>
-        prev.map((msg) => (msg.id === userMessage.id ? { ...msg, isAnimating: false } : msg))
-      );
+      try {
+        setMessages((prev) =>
+          prev.map((msg) => (msg.id === userMessage.id ? { ...msg, isAnimating: false } : msg))
+        );
+      } catch {
+        /* ignore */
+      }
     }, 300);
 
     try {
@@ -186,15 +189,22 @@ export default function Chat({
       };
       setMessages((prev) => [...prev, llmMessage]);
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        llmReply += chunk;
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const chunk = decoder.decode(value, { stream: true });
+          llmReply += chunk;
 
-        setMessages((prev) =>
-          prev.map((msg) => (msg.id === llmMessageId ? { ...msg, text: llmReply } : msg))
-        );
+          setMessages((prev) =>
+            prev.map((msg) => (msg.id === llmMessageId ? { ...msg, text: llmReply } : msg))
+          );
+        }
+      } catch (streamErr) {
+        if (streamErr instanceof DOMException && streamErr.name === 'AbortError') {
+          return;
+        }
+        throw streamErr;
       }
     } catch (err) {
       console.error('LLM Error:', err);
@@ -217,20 +227,20 @@ export default function Chat({
       {!fullPage && (
         <button
           onClick={() => setIsOpen(true)}
-          className={`fixed bottom-4 right-4 z-50 transition-opacity duration-300 md:bottom-6 md:right-6 ${
+          className={`fixed bottom-4 right-4 z-50 duration-150 [transition-timing-function:var(--ease-snap)] md:bottom-6 md:right-6 ${
             isOpen ? 'pointer-events-none scale-0 opacity-0' : 'opacity-100'
           }`}
           aria-label="Open chat"
         >
-          <span className="flex h-12 w-12 items-center justify-center border border-[var(--line)] bg-[color-mix(in_oklch,var(--bg-elevated)_90%,transparent)] text-[var(--fg)] backdrop-blur-sm transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)] md:h-14 md:w-14">
-            <MessageCircle className="h-5 w-5 md:h-6 md:w-6" strokeWidth={1.75} />
+          <span className="flex h-12 w-12 items-center justify-center border border-[var(--ghost-border)] bg-[var(--surface-container-low)] text-[var(--on-surface)] backdrop-blur-[20px] transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] hover:-translate-y-1 hover:bg-[var(--surface-container-high)] hover:shadow-lg hover:border-[var(--outline-variant)] md:h-14 md:w-14">
+            <MessageCircle className="h-5 w-5 md:h-6 md:w-6" strokeWidth={1.25} />
           </span>
         </button>
       )}
 
       <div
         ref={chatBoxRef}
-        className={`fixed z-50 transition-all duration-300 ease-out ${
+        className={`fixed z-50 duration-150 [transition-timing-function:var(--ease-snap)] ${
           fullPage
             ? 'inset-0 h-[100dvh] w-full scale-100 opacity-100'
             : isOpen
@@ -242,30 +252,30 @@ export default function Chat({
         }}
       >
         <div
-          className={`flex h-full w-full flex-col border border-[var(--line)] bg-[color-mix(in_oklch,var(--bg)_92%,transparent)] backdrop-blur-md ${
-            fullPage ? 'rounded-none' : 'rounded-none md:rounded-sm'
+          className={`flex h-full w-full flex-col border border-[var(--ghost-border)] bg-[color-mix(in_srgb,var(--surface)_85%,transparent)] backdrop-blur-[20px] ${
+            fullPage ? '' : ''
           }`}
         >
-          <div className="flex items-center justify-between border-b border-[var(--line)] px-5 py-4">
+          <div className="flex items-center justify-between border-b border-[var(--ghost-border)] px-5 py-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center border border-[var(--line)] font-display text-xs font-medium text-[var(--fg)]">
+              <div className="flex h-8 w-8 items-center justify-center border border-[var(--ghost-border)] font-mono-label text-[0.6rem] font-semibold text-[var(--on-surface)]">
                 PK
               </div>
-              <h3 className="text-sm font-medium text-[var(--fg)]">Pranay Kakkar</h3>
+              <h3 className="text-sm font-medium text-[var(--on-surface)]">Pranay Kakkar</h3>
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="flex h-8 w-8 items-center justify-center border border-transparent text-[var(--muted)] transition-colors hover:border-[var(--line)] hover:text-[var(--fg)]"
+              className="flex h-8 w-8 items-center justify-center border border-transparent text-[var(--secondary)] transition-colors duration-150 [transition-timing-function:var(--ease-snap)] hover:border-[var(--ghost-border)] hover:text-[var(--on-surface)]"
               aria-label="Close chat"
             >
-              <X className="h-4 w-4" />
+              <X className="h-4 w-4" strokeWidth={1.25} />
             </button>
           </div>
 
           <div className="flex-1 space-y-6 overflow-y-auto overscroll-contain px-4 py-6 md:px-6">
             {messages.length === 0 ? (
               <div className="flex h-full items-center justify-center px-4">
-                <p className="max-w-xs text-center text-sm leading-relaxed text-[var(--muted)]">
+                <p className="max-w-xs text-center font-body text-sm leading-relaxed text-[var(--secondary)]">
                   Start a conversation with the assistant.
                 </p>
               </div>
@@ -278,14 +288,14 @@ export default function Chat({
                   }`}
                 >
                   <div
-                    className={`max-w-[85%] shadow-sm md:max-w-[70%] ${
+                    className={`max-w-[85%] md:max-w-[70%] ${
                       message.sender === 'user'
-                        ? 'border border-[var(--line)] bg-[var(--accent-muted)] text-[var(--fg)]'
-                        : 'border border-[var(--line)] bg-[var(--bg-elevated)] text-[color-mix(in_oklch,var(--fg)_92%,var(--muted))]'
+                        ? 'border border-[var(--ghost-border)] bg-[var(--surface-container-low)] text-[var(--on-surface)]'
+                        : 'border border-[var(--ghost-border)] bg-[var(--surface-container-high)] text-[color-mix(in_srgb,var(--on-surface)_92%,var(--secondary))]'
                     }`}
                     style={{ padding: '12px 16px' }}
                   >
-                    <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
+                    <p className="whitespace-pre-wrap break-words font-body text-sm leading-relaxed">
                       {renderMarkdownLinks(message.text)}
                     </p>
                   </div>
@@ -296,8 +306,13 @@ export default function Chat({
           </div>
 
           <form
-            onSubmit={handleSendMessage}
-            className="flex-shrink-0 border-t border-[var(--line)] px-4 py-4 md:px-6"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void handleSendMessage(e).catch((submitErr) => {
+                console.error('Chat send failed:', submitErr);
+              });
+            }}
+            className="flex-shrink-0 border-t border-[var(--ghost-border)] px-4 py-4 md:px-6"
             style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
           >
             <div className="flex items-center gap-2 md:gap-3">
@@ -306,15 +321,15 @@ export default function Chat({
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 placeholder="Ask me about my experiences…"
-                className="min-h-[44px] flex-1 border border-[var(--line)] bg-transparent px-4 text-sm text-[var(--fg)] placeholder:text-[var(--muted)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
+                className="min-h-[44px] flex-1 border-0 border-b border-transparent bg-[var(--surface-container-lowest)] px-4 font-body text-sm text-[var(--on-surface)] placeholder:text-[var(--secondary)] transition-[border-color,background-color] duration-150 [transition-timing-function:var(--ease-snap)] focus:border-[var(--primary)] focus:bg-[var(--surface-container-high)] focus:outline-none"
               />
               <button
                 type="submit"
-                className="flex h-11 w-11 flex-shrink-0 items-center justify-center border border-[var(--line)] text-[var(--fg)] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-40"
+                className="ds-btn-primary flex h-11 min-w-[2.75rem] flex-shrink-0 items-center justify-center !p-0 disabled:cursor-not-allowed disabled:opacity-40"
                 disabled={!inputValue.trim()}
                 aria-label="Send message"
               >
-                <Send className="h-4 w-4" />
+                <Send className="h-4 w-4" strokeWidth={1.5} />
               </button>
             </div>
           </form>

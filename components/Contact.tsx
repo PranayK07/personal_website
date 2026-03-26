@@ -1,50 +1,53 @@
 'use client';
 
 import { useScrollAnimation } from '@/hooks/useScrollAnimation';
-import { RefObject } from 'react';
 
 export default function Contact() {
   const [ref, isVisible] = useScrollAnimation(0.15);
 
   return (
-    <section id="contact" className="px-4 py-20 sm:px-6 sm:py-28 lg:px-8">
+    <section id="contact" className="px-4 py-[var(--spacing-section)] sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[var(--content-max)]">
-        <div ref={ref as RefObject<HTMLDivElement>} className={`scroll-fade-in ${isVisible ? 'visible' : ''}`}>
-          <header className="mb-12 max-w-2xl">
-            <p className="text-[0.7rem] font-medium uppercase tracking-[0.28em] text-[var(--muted)]">Contact</p>
-            <h2 className="mt-3 font-display text-[clamp(1.75rem,4vw,2.35rem)] font-medium tracking-tight">
-              Get in touch
-            </h2>
-            <p className="mt-4 text-[0.9375rem] leading-relaxed text-[var(--muted)]">
+        <div ref={ref} className={`scroll-fade-in ${isVisible ? 'visible' : ''}`}>
+          <header className="mb-14 max-w-3xl">
+            <p className="ds-section-meta">06 // Contact</p>
+            <h2 className="ds-section-title mt-4">Reach me</h2>
+            <p className="mt-6 max-w-[55ch] font-body text-[0.9375rem] leading-[1.6] text-[var(--secondary)]">
               Open to collaborations, internships, and opportunities that match my work.
             </p>
           </header>
 
-          <div className="grid gap-10 border-t border-[var(--line)] pt-12 md:grid-cols-2">
-            <div>
-              <h3 className="text-[0.7rem] font-medium uppercase tracking-[0.2em] text-[var(--muted)]">Email</h3>
+          <div className="grid gap-8 md:grid-cols-2">
+            <div className="ds-card p-8">
+              <h3 className="font-mono-label text-[0.65rem] uppercase tracking-[0.2em] text-[var(--secondary)]">
+                Email
+              </h3>
               <a
                 href="mailto:pranay.kakkar@outlook.com"
-                className="mt-2 inline-block font-display text-lg text-[var(--fg)] underline decoration-[var(--line)] underline-offset-[6px] transition-colors hover:text-[var(--accent)] hover:decoration-[var(--accent)]"
+                className="mt-4 inline-block font-display text-lg font-medium text-[var(--on-surface)] underline decoration-[var(--ghost-border)] underline-offset-[6px] transition-[text-decoration-color] duration-150 [transition-timing-function:var(--ease-snap)] hover:decoration-[var(--primary)]"
               >
                 pranay.kakkar@outlook.com
               </a>
             </div>
-            <div>
-              <h3 className="text-[0.7rem] font-medium uppercase tracking-[0.2em] text-[var(--muted)]">Location</h3>
-              <p className="mt-2 font-display text-lg text-[var(--fg)]">Connecticut</p>
+            <div className="ds-card p-8">
+              <h3 className="font-mono-label text-[0.65rem] uppercase tracking-[0.2em] text-[var(--secondary)]">
+                Location
+              </h3>
+              <p className="mt-4 font-display text-lg font-medium text-[var(--on-surface)]">Connecticut</p>
             </div>
           </div>
 
-          <div className="mt-14 border-t border-[var(--line)] pt-10">
-            <h3 className="text-[0.7rem] font-medium uppercase tracking-[0.2em] text-[var(--muted)]">Profiles</h3>
-            <ul className="mt-6 flex flex-wrap gap-6">
+          <div className="mt-12">
+            <h3 className="font-mono-label text-[0.65rem] uppercase tracking-[0.2em] text-[var(--secondary)]">
+              Profiles
+            </h3>
+            <ul className="mt-6 flex flex-wrap gap-4">
               <li>
                 <a
                   href="https://github.com/PranayK07"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[0.9375rem] font-medium text-[var(--accent)] underline decoration-[var(--line)] underline-offset-4 hover:decoration-[var(--accent)]"
+                  className="ds-btn-secondary !inline-flex !px-5 !py-3 !normal-case !tracking-normal"
                 >
                   GitHub
                 </a>
@@ -54,7 +57,7 @@ export default function Contact() {
                   href="https://linkedin.com/in/pranay-kakkar"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[0.9375rem] font-medium text-[var(--accent)] underline decoration-[var(--line)] underline-offset-4 hover:decoration-[var(--accent)]"
+                  className="ds-btn-secondary !inline-flex !px-5 !py-3 !normal-case !tracking-normal"
                 >
                   LinkedIn
                 </a>
@@ -64,7 +67,7 @@ export default function Contact() {
                   href="https://twitter.com/pranay_kakkar"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[0.9375rem] font-medium text-[var(--accent)] underline decoration-[var(--line)] underline-offset-4 hover:decoration-[var(--accent)]"
+                  className="ds-btn-secondary !inline-flex !px-5 !py-3 !normal-case !tracking-normal"
                 >
                   Twitter
                 </a>

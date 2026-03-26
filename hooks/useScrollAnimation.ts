@@ -1,15 +1,25 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
+/**
+ * Observes the mounted element for intersection. Uses a callback ref so the observer
+ * attaches after the DOM node exists (ref.current is often null on the first effect run).
+ */
 export const useScrollAnimation = (threshold = 0.1) => {
   const [isVisible, setIsVisible] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [node, setNode] = useState<HTMLDivElement | null>(null);
+
+  const ref = useCallback((el: HTMLDivElement | null) => {
+    setNode(el);
+  }, []);
 
   useEffect(() => {
+    if (!node) return;
+
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
+        if (entry?.isIntersecting) {
           setIsVisible(true);
         }
       },
@@ -19,16 +29,9 @@ export const useScrollAnimation = (threshold = 0.1) => {
       }
     );
 
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
-
-    return () => {
-      if (ref.current) {
-        observer.unobserve(ref.current);
-      }
-    };
-  }, [threshold]);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [node, threshold]);
 
   return [ref, isVisible] as const;
 };

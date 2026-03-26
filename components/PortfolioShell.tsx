@@ -1,23 +1,20 @@
 'use client';
 
 import { useEffect, useState, useCallback, type ReactNode } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import SiteHeader from '@/components/SiteHeader';
-import SectionRail from '@/components/SectionRail';
 import { useSiteReveal } from '@/components/SiteRevealContext';
 
 const SECTION_IDS = ['home', 'chat', 'work', 'stack', 'projects', 'contact'] as const;
+const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 
 export default function PortfolioShell({ children }: { children: ReactNode }) {
-  const { revealed } = useSiteReveal();
+  const { heroProgress, pastHero } = useSiteReveal();
   const [activeId, setActiveId] = useState<string>('home');
-  const [scrollProgress, setScrollProgress] = useState(0);
+  // Nav bar shows once heroProgress > 0.7 (content has fully animated in)
+  const showNav = heroProgress > 0.7;
 
   const updateScroll = useCallback(() => {
-    const doc = document.documentElement;
-    const scrollTop = window.scrollY;
-    const docHeight = doc.scrollHeight - window.innerHeight;
-    setScrollProgress(docHeight > 0 ? Math.min(1, Math.max(0, scrollTop / docHeight)) : 0);
-
     const mid = window.innerHeight * 0.35;
     for (let i = SECTION_IDS.length - 1; i >= 0; i--) {
       const id = SECTION_IDS[i];
@@ -41,19 +38,26 @@ export default function PortfolioShell({ children }: { children: ReactNode }) {
     };
   }, [updateScroll]);
 
-  useEffect(() => {
-    if (revealed) updateScroll();
-  }, [revealed, updateScroll]);
-
   return (
     <>
-      {revealed && (
-        <>
-          <SiteHeader activeId={activeId} className="site-chrome-enter" />
-          <SectionRail activeId={activeId} scrollProgress={scrollProgress} className="site-chrome-enter" />
-        </>
-      )}
-      <div className={revealed ? 'lg:pl-[var(--rail-width)]' : undefined}>{children}</div>
+      {/* ── Sticky nav — slides in once hero is animated open ─────────── */}
+      <AnimatePresence>
+        {showNav && (
+          <motion.div
+            key="nav-shell"
+            initial={{ y: '-100%', opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: '-100%', opacity: 0 }}
+            transition={{ duration: 0.5, ease: EASE_OUT_EXPO }}
+            className="pointer-events-auto"
+          >
+            <SiteHeader activeId={activeId} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Main content ──────────────────────────────────────────────── */}
+      {children}
     </>
   );
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import { useScrollAnimation } from '@/hooks/useScrollAnimation';
-import { RefObject } from 'react';
 
 interface Project {
   title: string;
@@ -77,44 +76,43 @@ const projects: Project[] = [
 
 function ProjectBlock({ project }: { project: Project }) {
   return (
-    <article className="py-12 first:pt-2 last:pb-0">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
+    <article className="group border-t border-[var(--ghost-border)] py-8 transition-colors duration-300 hover:border-[var(--outline)] sm:py-10">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-10">
         <div className="min-w-0 flex-1">
-          <h3 className="font-display text-xl font-medium tracking-tight text-[var(--fg)] sm:text-[1.35rem]">
+          <h3 className="font-display text-lg font-medium tracking-[-0.02em] text-[var(--on-surface)] transition-transform duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] sm:text-xl group-hover:translate-x-1">
             {project.title}
           </h3>
-          <p className="mt-1 text-sm text-[var(--accent)]">
+          <p className="mt-2 font-body text-sm font-medium text-[var(--on-surface)]">
             {project.role}
-            {project.company && <span className="text-[var(--muted)]"> · {project.company}</span>}
+            {project.company && <span className="font-normal text-[var(--secondary)]"> · {project.company}</span>}
           </p>
         </div>
-        <time className="shrink-0 text-[0.8125rem] tabular-nums text-[var(--muted)] sm:pt-1 sm:text-right">
+        <time className="font-mono-label shrink-0 text-[0.65rem] uppercase tracking-[0.12em] text-[var(--secondary)] sm:pt-0.5">
           {project.date}
         </time>
       </div>
-      <p className="mt-6 max-w-[65ch] text-[0.9375rem] leading-[1.7] text-[color-mix(in_oklch,var(--fg)_75%,var(--muted))]">
+      <p className="mt-8 max-w-[65ch] font-body text-[0.9375rem] leading-[1.6] text-[color-mix(in_srgb,var(--on-surface)_82%,var(--secondary))]">
         {project.description}
       </p>
-      <ul className="mt-6 flex flex-wrap gap-2" aria-label="Technologies">
+      <ul className="mt-8 flex flex-wrap gap-2" aria-label="Technologies">
         {project.technologies.map((tech) => (
-          <li
-            key={tech}
-            className="border border-[var(--line)] bg-[var(--bg-elevated)] px-2.5 py-1 text-[0.7rem] font-medium uppercase tracking-wider text-[var(--muted)]"
-          >
-            {tech}
+          <li key={tech}>
+            <span className="ds-chip">{tech}</span>
           </li>
         ))}
       </ul>
       {project.githubUrl && (
-        <p className="mt-6">
+        <p className="mt-8">
           <a
             href={project.githubUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-sm font-medium text-[var(--accent)] underline decoration-[var(--line)] underline-offset-4 transition-colors hover:decoration-[var(--accent)]"
+            className="ds-btn-secondary inline-flex items-center gap-2 !normal-case !tracking-normal"
           >
-            View repository
-            <span aria-hidden>↗</span>
+            Repository
+            <span aria-hidden className="text-[var(--secondary)]">
+              →
+            </span>
           </a>
         </p>
       )}
@@ -126,19 +124,17 @@ export default function Projects() {
   const [ref, isVisible] = useScrollAnimation(0.15);
 
   return (
-    <section id="projects" className="px-4 py-20 sm:px-6 sm:py-28 lg:px-8">
+    <section id="projects" className="px-4 py-[var(--spacing-section)] sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[var(--content-max)]">
-        <div ref={ref as RefObject<HTMLDivElement>} className={`scroll-fade-in ${isVisible ? 'visible' : ''}`}>
-          <header className="mb-14 max-w-2xl">
-            <p className="text-[0.7rem] font-medium uppercase tracking-[0.28em] text-[var(--muted)]">Projects</p>
-            <h2 className="mt-3 font-display text-[clamp(1.75rem,4vw,2.35rem)] font-medium tracking-tight">
-              Projects & achievements
-            </h2>
-            <p className="mt-4 text-[0.9375rem] leading-relaxed text-[var(--muted)]">
+        <div ref={ref} className={`scroll-fade-in ${isVisible ? 'visible' : ''}`}>
+          <header className="mb-16 max-w-3xl">
+            <p className="ds-section-meta">05 // Projects</p>
+            <h2 className="ds-section-title mt-4">Shipped work</h2>
+            <p className="mt-6 max-w-[55ch] font-body text-[0.9375rem] leading-[1.6] text-[var(--secondary)]">
               Hackathons, research builds, and tools I&apos;ve shipped or led.
             </p>
           </header>
-          <div className="divide-y divide-[var(--line)] border-t border-[var(--line)]">
+          <div className="flex flex-col gap-11">
             {projects.map((project) => (
               <ProjectBlock key={project.title} project={project} />
             ))}

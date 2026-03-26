@@ -1,7 +1,6 @@
 'use client';
 
 import { useScrollAnimation } from '@/hooks/useScrollAnimation';
-import { RefObject } from 'react';
 
 interface Experience {
   title: string;
@@ -62,35 +61,34 @@ const experiences: Experience[] = [
 
 function ExperienceBlock({ experience }: { experience: Experience }) {
   return (
-    <article className="group py-12 first:pt-2 last:pb-0">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
+    <article className="group border-t border-[var(--ghost-border)] py-8 transition-colors duration-300 hover:border-[var(--outline)] sm:py-10">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-10">
         <div className="min-w-0 flex-1">
-          <h3 className="font-display text-xl font-medium tracking-tight text-[var(--fg)] sm:text-[1.35rem]">
+          <h3 className="font-display text-lg font-medium tracking-[-0.02em] text-[var(--on-surface)] transition-transform duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] sm:text-xl group-hover:translate-x-1">
             {experience.title}
           </h3>
-          <p className="mt-1 text-sm text-[var(--accent)]">
+          <p className="mt-2 font-body text-sm font-medium text-[var(--on-surface)]">
             {experience.company}
-            <span className="text-[var(--muted)]"> · {experience.location}</span>
+            <span className="font-normal text-[var(--secondary)]"> · {experience.location}</span>
           </p>
         </div>
-        <time
-          className="shrink-0 text-[0.8125rem] tabular-nums text-[var(--muted)] sm:pt-1 sm:text-right"
-          dateTime={experience.date}
-        >
-          {experience.date}
-        </time>
+        <div className="flex shrink-0 flex-col items-start gap-1 sm:items-end sm:pt-0.5">
+          <time
+            className="font-mono-label text-[0.65rem] uppercase tracking-[0.12em] text-[var(--secondary)]"
+            dateTime={experience.date}
+          >
+            {experience.date}
+          </time>
+        </div>
       </div>
-      <p className="mt-6 max-w-[65ch] text-[0.9375rem] leading-[1.7] text-[color-mix(in_oklch,var(--fg)_75%,var(--muted))]">
+      <p className="mt-8 max-w-[65ch] font-body text-[0.9375rem] leading-[1.6] text-[color-mix(in_srgb,var(--on-surface)_82%,var(--secondary))]">
         {experience.description}
       </p>
       {experience.technologies.length > 0 && (
-        <ul className="mt-6 flex flex-wrap gap-2" aria-label="Technologies">
+        <ul className="mt-8 flex flex-wrap gap-2" aria-label="Technologies">
           {experience.technologies.map((tech) => (
-            <li
-              key={tech}
-              className="border border-[var(--line)] bg-[var(--bg-elevated)] px-2.5 py-1 text-[0.7rem] font-medium uppercase tracking-wider text-[var(--muted)]"
-            >
-              {tech}
+            <li key={tech}>
+              <span className="ds-chip">{tech}</span>
             </li>
           ))}
         </ul>
@@ -103,19 +101,17 @@ export default function WorkExperience() {
   const [ref, isVisible] = useScrollAnimation(0.15);
 
   return (
-    <section id="work" className="px-4 py-20 sm:px-6 sm:py-28 lg:px-8">
+    <section id="work" className="px-4 py-[var(--spacing-section)] sm:px-6 lg:px-8">
       <div className="mx-auto max-w-[var(--content-max)]">
-        <div ref={ref as RefObject<HTMLDivElement>} className={`scroll-fade-in ${isVisible ? 'visible' : ''}`}>
-          <header className="mb-14 max-w-2xl">
-            <p className="text-[0.7rem] font-medium uppercase tracking-[0.28em] text-[var(--muted)]">Experience</p>
-            <h2 className="mt-3 font-display text-[clamp(1.75rem,4vw,2.35rem)] font-medium tracking-tight">
-              Work & research
-            </h2>
-            <p className="mt-4 text-[0.9375rem] leading-relaxed text-[var(--muted)]">
+        <div ref={ref} className={`scroll-fade-in ${isVisible ? 'visible' : ''}`}>
+          <header className="mb-16 max-w-3xl">
+            <p className="ds-section-meta">03 // Experience</p>
+            <h2 className="ds-section-title mt-4">Work & research</h2>
+            <p className="mt-6 max-w-[55ch] font-body text-[0.9375rem] leading-[1.6] text-[var(--secondary)]">
               Roles where I&apos;ve shipped analysis, research, and software in team settings.
             </p>
           </header>
-          <div className="divide-y divide-[var(--line)] border-t border-[var(--line)]">
+          <div className="flex flex-col gap-11">
             {experiences.map((experience) => (
               <ExperienceBlock key={`${experience.company}-${experience.date}`} experience={experience} />
             ))}
