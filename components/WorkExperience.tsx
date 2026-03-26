@@ -13,6 +13,15 @@ interface Experience {
 
 const experiences: Experience[] = [
   {
+    title: 'Founding Engineer',
+    company: 'DeepSalud LLC',
+    location: 'Remote',
+    date: 'Nov 2025 – Present',
+    description:
+      'Working on a patient engagement platform for healthcare.',
+    technologies: ['Supabase', 'REST APIs', 'Multi-Agent Systems', 'FHIR', 'RAG', 'LangChain', 'AI Safety'],
+  },
+  {
     title: 'Researcher',
     company: 'LLM Agent-Tool Interaction & Security Research Group',
     location: 'Storrs, CT',
@@ -28,7 +37,7 @@ const experiences: Experience[] = [
     date: 'Oct 2025 – Present',
     description:
       'Conducted quantitative startup analysis for a student-run venture capital fund, sourcing and evaluating 40+ early-stage fintech, AI, and SaaS companies using data-driven market research and competitive analysis. Built 3-statement financial models, unit economics, and DCF valuations for 10+ startups, applying KPI benchmarking, growth decomposition, and sensitivity analysis to support high-conviction investment decisions.',
-    technologies: [],
+    technologies: ['Python', 'Venture Capital', 'Financial Modeling', 'Market Research', 'Competitive Analysis'],
   },
   {
     title: 'AI/ML Researcher',
