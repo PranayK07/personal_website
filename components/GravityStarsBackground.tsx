@@ -7,6 +7,8 @@ type MouseGravity = 'attract' | 'repel';
 type StarsInteractionType = 'bounce' | 'merge';
 
 export interface GravityStarsBackgroundProps extends React.ComponentProps<'div'> {
+  /** Canvas shadow tint for star glow; warm default reads well on editorial dark UI */
+  glowShadowColor?: string;
   starsCount?: number;
   starsSize?: number;
   starsOpacity?: number;
@@ -30,6 +32,7 @@ interface Star {
 }
 
 const GravityStarsBackground: React.FC<GravityStarsBackgroundProps> = ({
+  glowShadowColor,
   starsCount = 350,
   starsSize = 3,
   starsOpacity = 0.75,
@@ -193,7 +196,8 @@ const GravityStarsBackground: React.FC<GravityStarsBackgroundProps> = ({
         ctx.beginPath();
         ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
         ctx.shadowBlur = glowIntensity;
-        ctx.shadowColor = `rgba(99, 102, 241, ${Math.min(1, alpha + 0.25)})`;
+        ctx.shadowColor =
+          glowShadowColor ?? `rgba(212, 196, 168, ${Math.min(0.85, alpha + 0.2)})`;
         ctx.arc(star.x, star.y, Math.max(0.5, star.size / 2), 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
@@ -241,6 +245,7 @@ const GravityStarsBackground: React.FC<GravityStarsBackgroundProps> = ({
     gravityStrength,
     starsInteraction,
     starsInteractionType,
+    glowShadowColor,
   ]);
 
   return (

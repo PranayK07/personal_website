@@ -1,11 +1,10 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Chat from '@/components/Chat';
-import CustomCursor from '@/components/CustomCursor';
 import { ArrowLeft } from 'lucide-react';
-import GravityStarsBackground from '@/components/GravityStarsBackground';
+import MonolithBackdrop from '@/components/MonolithBackdrop';
 
 function ChatPageContent() {
   const searchParams = useSearchParams();
@@ -18,35 +17,31 @@ function ChatPageContent() {
 
   return (
     <>
-      <div className="fixed top-0 left-0 w-full h-full -z-10 pointer-events-none">
-        <GravityStarsBackground />
-      </div>
-      <CustomCursor />
+      <MonolithBackdrop />
 
-      {/* Back button */}
       <button
         onClick={handleClose}
-        className="fixed top-6 left-6 z-50 flex items-center gap-2 px-4 py-2 rounded-full bg-black/20 backdrop-blur-xl border border-white/10 hover:border-indigo-400/40 transition-all text-white/60 hover:text-white"
+        className="fixed left-4 top-4 z-50 flex items-center gap-2 border border-[var(--ghost-border)] bg-[color-mix(in_srgb,var(--surface)_85%,transparent)] px-4 py-2 font-mono-label text-[0.65rem] uppercase tracking-[0.12em] text-[var(--secondary)] backdrop-blur-[20px] transition-colors duration-150 [transition-timing-function:var(--ease-snap)] hover:border-[color-mix(in_srgb,var(--outline)_50%,transparent)] hover:text-[var(--on-surface)] sm:left-6 sm:top-6"
         aria-label="Go back home"
       >
-        <ArrowLeft className="w-4 h-4" />
-        <span className="text-sm">Back</span>
+        <ArrowLeft className="h-4 w-4" strokeWidth={1.25} />
+        Back
       </button>
 
-      {/* Full page Chat with initial message */}
-      <Chat
-        isOpen={true}
-        setIsOpen={handleClose}
-        initialMessage={initialMessage}
-        fullPage={true}
-      />
+      <Chat isOpen={true} setIsOpen={handleClose} initialMessage={initialMessage} fullPage={true} />
     </>
   );
 }
 
 export default function ChatPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><p className="text-white">Loading...</p></div>}>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-[var(--surface)]">
+          <p className="font-mono-label text-sm text-[var(--secondary)]">Loading…</p>
+        </div>
+      }
+    >
       <ChatPageContent />
     </Suspense>
   );

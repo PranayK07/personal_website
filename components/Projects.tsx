@@ -1,7 +1,6 @@
 'use client';
 
 import { useScrollAnimation } from '@/hooks/useScrollAnimation';
-import { useState, MouseEvent, RefObject } from 'react';
 
 interface Project {
   title: string;
@@ -13,7 +12,6 @@ interface Project {
   githubUrl?: string;
 }
 
-
 const projects: Project[] = [
   {
     title: 'Value at Risk Estimation',
@@ -22,16 +20,9 @@ const projects: Project[] = [
     date: 'Jan 2026',
     description:
       'Developed a quantitative Value at Risk (VaR) estimation framework comparing classical Monte Carlo methods with a quantum-based estimator, demonstrating improved convergence for high-precision tail risk estimation. Designed an optimized quantile inversion pipeline for 95% VaR using interpolation-based search, reducing evaluation steps by 30–40%, and extended analysis to fat-tailed and skewed return distributions with CVaR and EVaR risk measures.',
-    technologies: [
-      'Python',
-      'Quantum Computing',
-      'Quantitative Risk Modeling',
-      'Statistical Analysis',
-      'Optimization',
-    ],
+    technologies: ['Python', 'Quantum Computing', 'Quantitative Risk Modeling', 'Statistical Analysis', 'Optimization'],
     githubUrl: 'https://github.com/UConn-Quantum-Computing/MIT-iQuHack-2026-State-Street-Classiq',
   },
-
   {
     title: 'FinMate',
     role: 'Backend Engineer',
@@ -42,7 +33,6 @@ const projects: Project[] = [
     technologies: ['AWS Bedrock', 'Claude Sonnet 4', 'Lambda', 'API Gateway', 'RDS (MySQL)', 'S3', 'EC2', 'TypeScript'],
     githubUrl: 'https://github.com/SujayCh07/codelinc10',
   },
-
   {
     title: 'FlowIQ',
     role: 'Full Stack Developer',
@@ -52,7 +42,6 @@ const projects: Project[] = [
     technologies: ['React', 'TypeScript', 'Tailwind CSS', 'Recharts', 'react-query', 'Vite', 'MongoDB', 'AWS'],
     githubUrl: 'https://github.com/PranayK07/FlowIQ',
   },
-
   {
     title: 'Stationery',
     role: 'Mobile Developer',
@@ -63,7 +52,6 @@ const projects: Project[] = [
     technologies: ['Kotlin', 'MongoDB', 'Android Studio', 'NoSQL', 'Figma'],
     githubUrl: 'https://github.com/PranayK07/Stationery',
   },
-
   {
     title: 'BobcatLib',
     role: 'Software Engineer',
@@ -74,150 +62,81 @@ const projects: Project[] = [
     technologies: ['Java', 'WPILib', 'Gradle', 'Git', 'FRC Robotics'],
     githubUrl: 'https://github.com/BobcatRobotics/BobcatLib',
   },
-
   {
     title: 'Face Classification with SVMs',
     role: 'Independent Project',
     company: '',
     date: 'Jun 2025',
-    description: 'Built a face recognition model on the LFW Deep Funneled dataset using PCA and Support Vector Machines with linear, RBF, and polynomial kernels; achieved highest accuracy with RBF on facial feature classification.',
+    description:
+      'Built a face recognition model on the LFW Deep Funneled dataset using PCA and Support Vector Machines with linear, RBF, and polynomial kernels; achieved highest accuracy with RBF on facial feature classification.',
     githubUrl: 'https://github.com/PranayK07/SVM_regressiontest',
     technologies: ['Python', 'scikit-learn', 'PCA', 'SVM', 'OpenCV'],
-},
-
-  // Add more projects by copying the format above
+  },
 ];
 
-
-function ProjectCard({ project, index }: { project: Project; index: number }) {
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [isHovering, setIsHovering] = useState(false);
-
-  const handleMouseMove = (e: MouseEvent<HTMLAnchorElement | HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
-    const y = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
-    setMousePosition({ x, y });
-  };
-
-  const handleMouseEnter = () => setIsHovering(true);
-  const handleMouseLeave = () => {
-    setIsHovering(false);
-    setMousePosition({ x: 0, y: 0 });
-  };
-
-  const rotateX = isHovering ? mousePosition.y * 10 : 0;
-  const rotateY = isHovering ? mousePosition.x * 10 : 0;
-
-  const cardStyle = {
-    transform: `perspective(1000px) rotateX(${-rotateX}deg) rotateY(${rotateY}deg) ${isHovering ? 'translateZ(20px)' : 'translateZ(0)'}`,
-    transition: 'transform 0.1s ease-out',
-  };
-
-  const content = (
-    <div
-      className="card relative overflow-hidden group perspective-1000"
-      style={{
-        background: 'linear-gradient(135deg, rgba(17, 17, 17, 0.9) 0%, rgba(17, 17, 17, 0.7) 100%)',
-      }}
-    >
-      {/* Animated gradient overlay on hover */}
-      <div
-        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-        style={{
-          background: `radial-gradient(circle at ${(mousePosition.x + 1) * 50}% ${(mousePosition.y + 1) * 50}%, rgba(99, 102, 241, 0.15), transparent 50%)`,
-        }}
-      />
-
-      {/* Shimmer effect */}
-      <div
-        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"
-        style={{
-          background: `linear-gradient(135deg, transparent 0%, rgba(99, 102, 241, 0.1) ${(mousePosition.x + 1) * 50}%, transparent 100%)`,
-        }}
-      />
-
-      <div className="relative z-10">
-        {/* Header with title on left and date on right */}
-        <div className="flex items-start justify-between mb-6 gap-4">
-          <div className="flex-1">
-            <h3 className="heading-3 mb-3 group-hover:text-accent transition-colors duration-300 text-left">
-              {project.title}
-            </h3>
-            <p className="text-accent font-medium text-left">
-              {project.role}
-              {project.company && ` at ${project.company}`}
-            </p>
-          </div>
-          <span className="text-muted text-sm whitespace-nowrap flex-shrink-0 text-right">{project.date}</span>
-        </div>
-        
-        <p className="text-muted mb-6 leading-relaxed text-left">
-          {project.description}
-        </p>
-        
-        <div className="flex flex-wrap gap-2">
-          {project.technologies.map((tech, techIndex) => (
-            <span
-              key={techIndex}
-              className="px-3 py-1 text-xs font-medium bg-accent/10 text-accent rounded-full hover:bg-accent/20 hover:scale-105 transition-all duration-200 cursor-default"
-            >
-              {tech}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* 3D depth effect border */}
-      <div className="absolute inset-0 rounded-xl border border-accent/0 group-hover:border-accent/30 transition-all duration-500 pointer-events-none" />
-    </div>
-  );
-
-  if (project.githubUrl) {
-    return (
-      <a
-        href={project.githubUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="block no-underline"
-        onMouseMove={handleMouseMove}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        style={cardStyle}
-      >
-        {content}
-      </a>
-    );
-  }
-
+function ProjectBlock({ project }: { project: Project }) {
   return (
-    <div
-      onMouseMove={handleMouseMove}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      style={cardStyle}
-    >
-      {content}
-    </div>
+    <article className="group border-t border-[var(--ghost-border)] py-8 transition-colors duration-300 hover:border-[var(--outline)] sm:py-10">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-10">
+        <div className="min-w-0 flex-1">
+          <h3 className="font-display text-lg font-medium tracking-[-0.02em] text-[var(--on-surface)] transition-transform duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] sm:text-xl group-hover:translate-x-1">
+            {project.title}
+          </h3>
+          <p className="mt-2 font-body text-sm font-medium text-[var(--on-surface)]">
+            {project.role}
+            {project.company && <span className="font-normal text-[var(--secondary)]"> · {project.company}</span>}
+          </p>
+        </div>
+        <time className="font-mono-label shrink-0 text-[0.65rem] uppercase tracking-[0.12em] text-[var(--secondary)] sm:pt-0.5">
+          {project.date}
+        </time>
+      </div>
+      <p className="mt-8 max-w-[65ch] font-body text-[0.9375rem] leading-[1.6] text-[color-mix(in_srgb,var(--on-surface)_82%,var(--secondary))]">
+        {project.description}
+      </p>
+      <ul className="mt-8 flex flex-wrap gap-2" aria-label="Technologies">
+        {project.technologies.map((tech) => (
+          <li key={tech}>
+            <span className="ds-chip">{tech}</span>
+          </li>
+        ))}
+      </ul>
+      {project.githubUrl && (
+        <p className="mt-8">
+          <a
+            href={project.githubUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ds-btn-secondary inline-flex items-center gap-2 !normal-case !tracking-normal"
+          >
+            Repository
+            <span aria-hidden className="text-[var(--secondary)]">
+              →
+            </span>
+          </a>
+        </p>
+      )}
+    </article>
   );
 }
 
 export default function Projects() {
-  const [ref, isVisible] = useScrollAnimation(0.2);
+  const [ref, isVisible] = useScrollAnimation(0.15);
 
   return (
-    <section id="projects" className="section" style={{ scrollMarginTop: 'var(--pillnav-safe-top, 192px)' }}>
-      <div className="container text-center">
-        <div
-          ref={ref as RefObject<HTMLDivElement>}
-          className={`scroll-fade-in ${isVisible ? 'visible' : ''}`}
-        >
-          <h2 className="heading-2 text-center mb-12">
-            Projects & Achievements
-          </h2>
-          <div className="grid gap-6 max-w-2xl mx-auto">
-            {projects.map((project, index) => (
-              <ProjectCard key={index} project={project} index={index} />
+    <section id="projects" className="px-4 py-[var(--spacing-section)] sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-[var(--content-max)]">
+        <div ref={ref} className={`scroll-fade-in ${isVisible ? 'visible' : ''}`}>
+          <header className="mb-16 max-w-3xl">
+            <p className="ds-section-meta">05 // Projects</p>
+            <h2 className="ds-section-title mt-4">Shipped work</h2>
+            <p className="mt-6 max-w-[55ch] font-body text-[0.9375rem] leading-[1.6] text-[var(--secondary)]">
+              Hackathons, research builds, and tools I&apos;ve shipped or led.
+            </p>
+          </header>
+          <div className="flex flex-col gap-11">
+            {projects.map((project) => (
+              <ProjectBlock key={project.title} project={project} />
             ))}
           </div>
         </div>
