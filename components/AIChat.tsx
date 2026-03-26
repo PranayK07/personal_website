@@ -85,7 +85,7 @@ export default function AIChat() {
               <button
                 type="button"
                 onClick={() => handleExampleClick(question)}
-                className="w-full border border-[var(--ghost-border)] bg-[var(--surface-container-lowest)] px-4 py-3 text-left font-body text-[0.875rem] leading-snug text-[color-mix(in_srgb,var(--on-surface)_90%,var(--secondary))] transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] hover:-translate-y-1 hover:border-[var(--outline-variant)] hover:bg-[var(--surface-container-low)] hover:text-[var(--on-surface)] hover:shadow-md"
+                className="ds-prompt-btn"
               >
                 {question}
               </button>

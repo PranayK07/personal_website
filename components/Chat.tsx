@@ -3,6 +3,29 @@
 import { useState, useRef, useEffect, ReactNode } from 'react';
 import { MessageCircle, X, Send } from 'lucide-react';
 
+/**
+ * Validates that a URL uses a safe protocol.
+ * Prevents javascript: URIs and other potentially harmful schemes.
+ *
+ * @param url - The URL string to validate
+ * @returns true if the URL is safe to use in a link
+ */
+function isValidUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url, window.location.href);
+    return ['http:', 'https:', 'mailto:'].includes(parsed.protocol);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Renders markdown-style links within text.
+ * Validates URLs to prevent XSS attacks via javascript: URIs.
+ *
+ * @param text - The text content that may contain markdown links
+ * @returns React nodes with properly rendered links
+ */
 function renderMarkdownLinks(text: string): ReactNode {
   const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
   const parts: ReactNode[] = [];
@@ -19,17 +42,26 @@ function renderMarkdownLinks(text: string): ReactNode {
 
     const linkText = match[1];
     const url = match[2];
-    parts.push(
-      <a
-        key={`link-${keyIndex++}`}
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-[var(--primary)] underline decoration-[var(--ghost-border)] underline-offset-2 transition-[text-decoration-color] duration-150 [transition-timing-function:var(--ease-snap)] hover:decoration-[var(--primary)]"
-      >
-        {linkText}
-      </a>
-    );
+
+    // Only render as link if URL is valid and safe
+    if (isValidUrl(url)) {
+      parts.push(
+        <a
+          key={`link-${keyIndex++}`}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[var(--primary)] underline decoration-[var(--ghost-border)] underline-offset-2 transition-[text-decoration-color] duration-150 [transition-timing-function:var(--ease-snap)] hover:decoration-[var(--primary)]"
+        >
+          {linkText}
+        </a>
+      );
+    } else {
+      // Render as plain text if URL is invalid
+      parts.push(
+        <span key={`text-${keyIndex++}`}>{match[0]}</span>
+      );
+    }
 
     lastIndex = match.index + match[0].length;
   }
@@ -231,6 +263,7 @@ export default function Chat({
             isOpen ? 'pointer-events-none scale-0 opacity-0' : 'opacity-100'
           }`}
           aria-label="Open chat"
+          aria-expanded={isOpen}
         >
           <span className="flex h-12 w-12 items-center justify-center border border-[var(--ghost-border)] bg-[var(--surface-container-low)] text-[var(--on-surface)] backdrop-blur-[20px] transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] hover:-translate-y-1 hover:bg-[var(--surface-container-high)] hover:shadow-lg hover:border-[var(--outline-variant)] md:h-14 md:w-14">
             <MessageCircle className="h-5 w-5 md:h-6 md:w-6" strokeWidth={1.25} />

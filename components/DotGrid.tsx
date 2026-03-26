@@ -7,13 +7,24 @@ import styles from './DotGrid.module.css';
 
 gsap.registerPlugin(InertiaPlugin);
 
-const throttle = (func: (...args: any[]) => void, limit: number) => {
+/**
+ * Generic throttle utility with proper type constraints.
+ * Limits the rate at which a function can be called.
+ *
+ * @param func - The function to throttle
+ * @param limit - Minimum time (ms) between function calls
+ * @returns Throttled version of the function
+ */
+const throttle = <T extends unknown[]>(
+  func: (...args: T) => void,
+  limit: number
+): ((...args: T) => void) => {
   let lastCall = 0;
-  return function (this: any, ...args: any[]) {
+  return function (...args: T) {
     const now = performance.now();
     if (now - lastCall >= limit) {
       lastCall = now;
-      func.apply(this, args);
+      func(...args);
     }
   };
 };
@@ -270,7 +281,9 @@ const DotGrid: React.FC<DotGridProps> = ({
       }
     };
 
-    const throttledMove = throttle(onMove, 50);
+    // Create throttled version once and reuse the same reference
+    const throttledMove = useMemo(() => throttle(onMove, 50), [maxSpeed, speedTrigger, proximity, resistance, returnDuration]);
+
     window.addEventListener('mousemove', throttledMove, { passive: true });
     window.addEventListener('click', onClick);
 
@@ -283,7 +296,7 @@ const DotGrid: React.FC<DotGridProps> = ({
   return (
     <section className={`${styles.dotGrid} ${className}`} style={style}>
       <div ref={wrapperRef} className={styles.dotGridWrap}>
-        <canvas ref={canvasRef} className={styles.dotGridCanvas} />
+        <canvas ref={canvasRef} className={styles.dotGridCanvas} aria-hidden="true" />
       </div>
     </section>
   );
