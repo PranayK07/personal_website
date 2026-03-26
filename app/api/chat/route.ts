@@ -375,12 +375,12 @@ export async function POST(req: Request) {
         const sinceLast = now - lastRateLimit;
 
         let remainingMs: number;
-        if (sinceLast < COOLDOWN_MS) {
+        if (sinceLast < RATE_LIMIT_CONFIG.COOLDOWN_MS) {
           // Still within an existing cooldown window; extend remaining based on that.
-          remainingMs = COOLDOWN_MS - sinceLast;
+          remainingMs = RATE_LIMIT_CONFIG.COOLDOWN_MS - sinceLast;
         } else {
           // New cooldown window starts now.
-          remainingMs = COOLDOWN_MS;
+          remainingMs = RATE_LIMIT_CONFIG.COOLDOWN_MS;
         }
 
         const remainingSeconds = Math.max(1, Math.ceil(remainingMs / 1000));
