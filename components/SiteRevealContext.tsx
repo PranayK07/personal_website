@@ -35,15 +35,15 @@ export function SiteRevealProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const HERO_TRANSITION_HEIGHT = typeof window !== 'undefined' ? window.innerHeight * 0.65 : 600;
-
     const update = () => {
       frameRef.current = 0;
       const scrollY = window.scrollY;
       const heroEl = document.getElementById('home');
+      const heroTransitionHeight =
+        typeof window !== 'undefined' ? window.innerHeight * 0.65 : 600;
 
       // Progress through the hero section (0 = at top, 1 = name should be in full layout position)
-      const progress = clamp01(scrollY / HERO_TRANSITION_HEIGHT);
+      const progress = clamp01(scrollY / heroTransitionHeight);
       setHeroProgress(progress);
 
       // Past hero = hero bottom has left the viewport

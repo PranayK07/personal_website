@@ -7,11 +7,15 @@ export default function AIChat() {
   const [promptValue, setPromptValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const submitPrompt = () => {
     if (promptValue.trim()) {
       window.location.href = `/chat?message=${encodeURIComponent(promptValue.trim())}`;
     }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    submitPrompt();
   };
 
   const handleExampleClick = (question: string) => {
@@ -55,7 +59,7 @@ export default function AIChat() {
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                handleSubmit(e);
+                submitPrompt();
               }
             }}
             placeholder="Ask me anything about my experience…"
