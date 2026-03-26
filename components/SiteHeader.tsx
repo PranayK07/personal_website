@@ -42,9 +42,10 @@ export default function SiteHeader({
               <a
                 key={item.id}
                 href={item.href}
-                className={`relative pt-1 text-[0.65rem] font-medium uppercase tracking-[0.18em] transition-colors duration-150 [transition-timing-function:var(--ease-snap)] ${active
-                    ? 'border-t-2 border-[var(--primary)] text-[var(--on-surface)]'
-                    : 'border-t-2 border-transparent text-[var(--secondary)] hover:text-[var(--on-surface)]'
+                data-active={active}
+                className={`ds-nav-link pt-1 text-[0.65rem] font-medium uppercase tracking-[0.18em] ${active
+                    ? 'text-[var(--on-surface)]'
+                    : 'text-[var(--secondary)] hover:text-[var(--on-surface)]'
                   }`}
               >
                 {item.label}

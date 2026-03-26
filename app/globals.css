@@ -76,14 +76,19 @@ body {
   color: var(--on-surface);
 }
 
-/* Dot grid texture — drafting table */
+/* Dot grid texture — drafting table with depth vignette */
 .monolith-backdrop-grid {
   background-color: var(--surface);
-  background-image: radial-gradient(
-    rgba(255, 255, 255, 0.06) 1px,
-    transparent 1px
-  );
-  background-size: 24px 24px;
+  background-image:
+    /* Depth vignette — darker at edges, lighter centre-bottom */
+    radial-gradient(ellipse 80% 60% at 50% 100%, rgba(255,255,255,0.025) 0%, transparent 70%),
+    radial-gradient(ellipse 100% 50% at 50% 0%, rgba(0,0,0,0.35) 0%, transparent 60%),
+    /* Dot grid */
+    radial-gradient(rgba(255, 255, 255, 0.065) 1px, transparent 1px);
+  background-size:
+    100% 100%,
+    100% 100%,
+    24px 24px;
 }
 
 section[id] {
@@ -188,7 +193,7 @@ body {
   scrollbar-width: thin;
 }
 
-/* Ghost chip — hairline etch */
+/* Ghost chip — hairline etch with soft sweep */
 .ds-chip {
   display: inline-flex;
   align-items: center;
@@ -202,56 +207,91 @@ body {
   color: var(--secondary);
   background: transparent;
   border-radius: 0;
-  transition: border-color var(--duration-fast) var(--ease-snap),
-    color var(--duration-fast) var(--ease-snap),
-    background-color var(--duration-fast) var(--ease-snap);
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+  transition: border-color 0.4s cubic-bezier(0.25, 1, 0.5, 1),
+    color 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.ds-chip::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.08);
+  z-index: -1;
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 .ds-chip:hover {
-  border-color: color-mix(in srgb, var(--outline) 50%, transparent);
+  border-color: rgba(255, 255, 255, 0.3);
   color: var(--on-surface);
 }
 
-/* Primary CTA — sharp, smooth interaction */
+.ds-chip:hover::before {
+  transform: scaleX(1);
+}
+
+/* Primary CTA — sharp, sweeping fill interaction from white to transparent */
 .ds-btn-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 0.65rem 1.25rem;
   font-size: 0.8125rem;
-  font-weight: 500; /* Dropped from 600 for quieter typography */
+  font-weight: 500;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--on-primary);
-  background: var(--primary);
-  border: none;
+  background: transparent;
+  border: 1px solid var(--primary);
   border-radius: 0;
-  transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1),
-    color var(--duration-fast) var(--ease-snap),
-    background var(--duration-fast) var(--ease-snap),
-    box-shadow 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+  transition: color 0.4s cubic-bezier(0.25, 1, 0.5, 1),
+    border-color 0.4s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
-.ds-btn-primary:active {
-  transform: translateY(2px);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+.ds-btn-primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: var(--primary);
+  z-index: -1;
+  transform-origin: right;
+  transform: scaleX(1);
+  transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 .ds-btn-primary:hover {
-  transform: translateY(-2px);
   color: var(--on-surface);
-  background: var(--surface-container-high);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border-color: var(--ghost-border);
+}
+
+.ds-btn-primary:hover::before {
+  transform: scaleX(0);
+}
+
+.ds-btn-primary:active {
+  color: var(--on-surface);
 }
 
 .ds-btn-primary:disabled {
   opacity: 0.35;
   cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
+  pointer-events: none;
 }
 
-/* Secondary — hairline */
+/* Secondary — sweeping fill interaction */
 .ds-btn-secondary {
   display: inline-flex;
   align-items: center;
@@ -265,18 +305,38 @@ body {
   background: transparent;
   border: 1px solid var(--outline);
   border-radius: 0;
-  transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1),
-    border-color var(--duration-fast) var(--ease-snap),
-    color var(--duration-fast) var(--ease-snap);
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+  transition: color 0.4s cubic-bezier(0.25, 1, 0.5, 1),
+    border-color 0.4s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
-.ds-btn-secondary:active {
-  transform: translateY(2px);
+.ds-btn-secondary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #ffffff;
+  z-index: -1;
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 .ds-btn-secondary:hover {
-  transform: translateY(-2px);
-  border-color: var(--primary);
+  color: #000000;
+  border-color: #ffffff;
+}
+
+.ds-btn-secondary:hover::before {
+  transform: scaleX(1);
+}
+
+.ds-btn-secondary:active {
+  color: #000000;
 }
 
 /* Section label + title pattern */
@@ -313,3 +373,66 @@ body {
   border-color: var(--outline-variant);
   transform: translateY(-2px);
 }
+
+/* Suggested Prompt Buttons */
+.ds-prompt-btn {
+  width: 100%;
+  border: 1px solid var(--ghost-border);
+  background: var(--surface-container-lowest);
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-family: var(--font-body), sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.375;
+  color: color-mix(in srgb, var(--on-surface) 90%, var(--secondary));
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+  transition: color 0.4s cubic-bezier(0.25, 1, 0.5, 1),
+    border-color 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.ds-prompt-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.08); /* subtle white */
+  z-index: -1;
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.ds-prompt-btn:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--on-surface);
+}
+
+.ds-prompt-btn:hover::before {
+  transform: scaleX(1);
+}
+
+/* Nav links sweeping hover */
+.ds-nav-link {
+  position: relative;
+  transition: color 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+}
+.ds-nav-link::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--primary);
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+}
+.ds-nav-link:hover::before, .ds-nav-link[data-active="true"]::before {
+  transform: scaleX(1);
+}
+
