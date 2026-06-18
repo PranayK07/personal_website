@@ -3,21 +3,25 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Menu, X } from 'lucide-react';
+import type { LastUpdated } from '@/lib/getLastUpdated';
 
 const NAV = [
   { id: 'home', label: 'Intro', href: '#home' },
   { id: 'chat', label: 'Ask', href: '#chat' },
   { id: 'work', label: 'Work', href: '#work' },
-  { id: 'stack', label: 'Stack', href: '#stack' },
+  { id: 'hackathons', label: 'Circuit', href: '#hackathons' },
   { id: 'projects', label: 'Projects', href: '#projects' },
+  { id: 'stack', label: 'Stack', href: '#stack' },
   { id: 'contact', label: 'Contact', href: '#contact' },
 ] as const;
 
 export default function SiteHeader({
   activeId,
+  lastUpdated,
   className = '',
 }: {
   activeId: string;
+  lastUpdated: LastUpdated;
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -28,12 +32,26 @@ export default function SiteHeader({
       style={{ height: 'var(--site-header-h)' }}
     >
       <div className="mx-auto flex h-full max-w-[var(--content-max)] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-        <a
-          href="#home"
-          className="font-mono-label text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-[var(--on-surface)] transition-colors duration-150 [transition-timing-function:var(--ease-snap)] hover:text-[var(--secondary)]"
-        >
-          pk
-        </a>
+        <div className="flex items-center gap-3">
+          <a
+            href="#home"
+            className="font-mono-label text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-[var(--on-surface)] transition-colors duration-150 [transition-timing-function:var(--ease-snap)] hover:text-[var(--secondary)]"
+          >
+            pk
+          </a>
+          <span
+            aria-hidden
+            className="h-3 w-px bg-[var(--ghost-border)]"
+          />
+          <time
+            dateTime={lastUpdated.iso}
+            title={`Last updated ${lastUpdated.label}`}
+            className="font-mono-label flex items-center gap-1 text-[0.6rem] uppercase tracking-[0.16em] text-[var(--secondary)]"
+          >
+            <span className="hidden sm:inline">Updated&nbsp;</span>
+            {lastUpdated.label}
+          </time>
+        </div>
 
         <nav className="hidden items-center gap-6 md:flex" aria-label="Primary">
           {NAV.map((item) => {

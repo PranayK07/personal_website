@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Hero from '@/components/Hero';
 import WorkExperience from '@/components/WorkExperience';
 import TechStack from '@/components/TechStack';
+import HackathonCircuit from '@/components/HackathonCircuit';
 import Projects from '@/components/Projects';
 import Contact from '@/components/Contact';
 import AIChat from '@/components/AIChat';
@@ -34,8 +35,9 @@ export default function HomePageContent() {
               </div>
             </section>
             <WorkExperience />
-            <TechStack />
+            <HackathonCircuit />
             <Projects />
+            <TechStack />
             <Contact />
           </motion.div>
         )}

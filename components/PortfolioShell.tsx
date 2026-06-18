@@ -4,11 +4,18 @@ import { useEffect, useState, useCallback, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import SiteHeader from '@/components/SiteHeader';
 import { useSiteReveal } from '@/components/SiteRevealContext';
+import type { LastUpdated } from '@/lib/getLastUpdated';
 
-const SECTION_IDS = ['home', 'chat', 'work', 'stack', 'projects', 'contact'] as const;
+const SECTION_IDS = ['home', 'chat', 'work', 'hackathons', 'projects', 'stack', 'contact'] as const;
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 
-export default function PortfolioShell({ children }: { children: ReactNode }) {
+export default function PortfolioShell({
+  children,
+  lastUpdated,
+}: {
+  children: ReactNode;
+  lastUpdated: LastUpdated;
+}) {
   const { heroProgress, pastHero } = useSiteReveal();
   const [activeId, setActiveId] = useState<string>('home');
   // Nav bar shows once heroProgress > 0.7 (content has fully animated in)
@@ -51,7 +58,7 @@ export default function PortfolioShell({ children }: { children: ReactNode }) {
             transition={{ duration: 0.5, ease: EASE_OUT_EXPO }}
             className="pointer-events-auto"
           >
-            <SiteHeader activeId={activeId} />
+            <SiteHeader activeId={activeId} lastUpdated={lastUpdated} />
           </motion.div>
         )}
       </AnimatePresence>

@@ -386,6 +386,245 @@ body {
   transform: scaleX(1);
 }
 
+/* Hero business card — contact link affordance (sweeping fill, matches buttons) */
+.ds-contact-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  height: 2.75rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--ghost-border);
+  font-family: var(--font-mono), monospace;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--secondary);
+  background: transparent;
+  border-radius: 0;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+  transition: color 0.4s cubic-bezier(0.25, 1, 0.5, 1),
+    border-color 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.ds-contact-link::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: rgba(255, 255, 255, 0.08);
+  z-index: -1;
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.ds-contact-link:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  color: var(--on-surface);
+}
+
+.ds-contact-link:hover::before {
+  transform: scaleX(1);
+}
+
+.ds-contact-link:focus-visible {
+  outline: none;
+  border-color: var(--primary);
+  color: var(--on-surface);
+}
+
+/* ── Hackathon circuit ──────────────────────────────────────────────── */
+:root {
+  --medal-gold: #c9a227;
+  --medal-silver: #b8bcc2;
+  --medal-bronze: #b08d57;
+}
+
+/* Medal indicator dot — the only place colour is used; restrained metallics */
+.medal-dot {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  border-radius: 9999px;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--surface) 65%, transparent);
+  transition: transform var(--duration-ui) var(--ease-snap);
+}
+.medal-dot--gold {
+  background: var(--medal-gold);
+}
+.medal-dot--silver {
+  background: var(--medal-silver);
+}
+.medal-dot--bronze {
+  background: var(--medal-bronze);
+}
+.medal-dot--none {
+  background: transparent;
+  border: 1.5px solid var(--secondary);
+}
+
+/* US map outline */
+.map-state {
+  fill: color-mix(in srgb, var(--on-surface) 5%, transparent);
+  stroke: var(--outline-variant);
+  stroke-width: 0.75px;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Chronological connector — implies a travelled "circuit" */
+.map-route {
+  fill: none;
+  stroke: color-mix(in srgb, var(--on-surface) 28%, transparent);
+  stroke-width: 1px;
+  stroke-dasharray: 2 4;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Interactive markers — overlaid HTML buttons for native focus/keyboard */
+.map-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  z-index: 2;
+}
+.map-marker:hover .medal-dot,
+.map-marker.is-active .medal-dot {
+  transform: scale(1.28);
+}
+.map-marker:focus-visible {
+  outline: none;
+}
+.map-marker:focus-visible .medal-dot {
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--primary);
+}
+.map-marker.is-active::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 13px;
+  height: 13px;
+  border-radius: 9999px;
+  transform: translate(-50%, -50%);
+  border: 1.5px solid color-mix(in srgb, var(--on-surface) 50%, transparent);
+  animation: markerPulse 1.4s var(--ease-snap) infinite;
+}
+
+@keyframes markerPulse {
+  0% {
+    opacity: 0.7;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(3);
+  }
+}
+
+/* Hover/focus preview tooltip */
+.map-tooltip {
+  position: absolute;
+  transform: translate(-50%, calc(-100% - 14px));
+  z-index: 5;
+  min-width: 160px;
+  max-width: 220px;
+  pointer-events: none;
+  background: var(--surface-container-high);
+  border: 1px solid var(--outline-variant);
+  padding: 0.7rem 0.8rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+/* Compact event cards beside the map */
+.hack-card {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--ghost-border);
+  background: var(--surface-container-low);
+  padding: 0.9rem 1rem;
+  cursor: pointer;
+  transition: border-color var(--duration-ui) var(--ease-snap),
+    background-color var(--duration-ui) var(--ease-snap),
+    transform 0.2s var(--ease-snap);
+}
+.hack-card:hover,
+.hack-card.is-active {
+  border-color: var(--outline-variant);
+  background: var(--surface-bright);
+  transform: translateX(2px);
+}
+.hack-card:focus-visible {
+  outline: none;
+  border-color: var(--primary);
+}
+.hack-card-arrow {
+  transition: transform var(--duration-ui) var(--ease-snap),
+    color var(--duration-ui) var(--ease-snap);
+}
+.hack-card:hover .hack-card-arrow,
+.hack-card.is-active .hack-card-arrow {
+  transform: translateX(3px);
+  color: var(--on-surface);
+}
+
+/* Active event detail panel — gentle fade as the selection changes */
+.hack-detail {
+  animation: hackDetailIn 0.28s var(--ease-snap);
+}
+@keyframes hackDetailIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Brief highlight when a project is reached via the map */
+.project-highlight {
+  animation: projectHighlight 1.8s var(--ease-snap);
+}
+
+@keyframes projectHighlight {
+  0% {
+    box-shadow: inset 3px 0 0 var(--primary);
+    background: color-mix(in srgb, var(--on-surface) 7%, transparent);
+  }
+  100% {
+    box-shadow: inset 3px 0 0 transparent;
+    background: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-marker.is-active::after {
+    animation: none;
+    opacity: 0;
+  }
+  .project-highlight {
+    animation: none;
+  }
+  .hack-detail {
+    animation: none;
+  }
+}
+
 /* Nav links sweeping hover */
 .ds-nav-link {
   position: relative;
@@ -405,5 +644,83 @@ body {
 }
 .ds-nav-link:hover::before, .ds-nav-link[data-active="true"]::before {
   transform: scaleX(1);
+}
+
+/* ── Horizontal scroll-snap rail (Projects carousel) ────────────────── */
+.ds-hscroll {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  /* Leave room so the first/last card isn't flush against the edges */
+  scroll-padding-left: 0.25rem;
+  padding-bottom: 1rem;
+  -webkit-overflow-scrolling: touch;
+  /* Keep horizontal panning from hijacking vertical page scroll / back-nav */
+  overscroll-behavior-x: contain;
+  /* Thin, theme-consistent scrollbar kept visible as an affordance (Firefox) */
+  scrollbar-width: thin;
+  scrollbar-color: var(--outline-variant) var(--surface-container-lowest);
+}
+.ds-hscroll::-webkit-scrollbar {
+  height: 6px;
+}
+.ds-hscroll::-webkit-scrollbar-track {
+  background: var(--surface-container-lowest);
+}
+.ds-hscroll::-webkit-scrollbar-thumb {
+  background: var(--outline-variant);
+  border-radius: 0;
+}
+.ds-hscroll::-webkit-scrollbar-thumb:hover {
+  background: var(--outline);
+}
+
+/* A single card in the rail — fixed width so the next card peeks */
+.ds-rail-card {
+  flex: 0 0 auto;
+  width: min(85vw, 22rem);
+  scroll-snap-align: start;
+  /* Horizontal counterpart to scroll-mt so map scrollIntoView clears the edge */
+  scroll-margin-left: 0.5rem;
+}
+
+/* Prev/Next arrow controls for the rail */
+.ds-scroll-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid var(--ghost-border);
+  background: var(--surface-container-low);
+  color: var(--secondary);
+  cursor: pointer;
+  transition: border-color var(--duration-ui) var(--ease-snap),
+    color var(--duration-ui) var(--ease-snap),
+    background-color var(--duration-ui) var(--ease-snap),
+    opacity var(--duration-ui) var(--ease-snap);
+}
+.ds-scroll-btn:hover:not(:disabled) {
+  border-color: var(--outline-variant);
+  background: var(--surface-bright);
+  color: var(--on-surface);
+}
+.ds-scroll-btn:focus-visible {
+  outline: none;
+  border-color: var(--primary);
+  color: var(--on-surface);
+}
+.ds-scroll-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-hscroll {
+    scroll-behavior: auto;
+  }
 }
 

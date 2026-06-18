@@ -1,5 +1,7 @@
 'use client';
 
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useScrollAnimation } from '@/hooks/useScrollAnimation';
 
 interface Experience {
@@ -106,8 +108,78 @@ function ExperienceBlock({ experience }: { experience: Experience }) {
   );
 }
 
+function ExperienceRailCard({ experience }: { experience: Experience }) {
+  return (
+    <article data-rail-card className="ds-card ds-rail-card group flex flex-col p-6 sm:p-7">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <h3 className="font-display text-lg font-medium tracking-[-0.02em] text-[var(--on-surface)] transition-transform duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] group-hover:translate-x-1">
+            {experience.title}
+          </h3>
+        </div>
+        <time
+          className="font-mono-label shrink-0 text-[0.6rem] uppercase tracking-[0.12em] text-[var(--secondary)] sm:pt-0.5"
+          dateTime={experience.date}
+        >
+          {experience.date}
+        </time>
+      </div>
+      <p className="mt-2 font-body text-[0.8125rem] font-medium leading-[1.45] text-[var(--on-surface)]">
+        {experience.company}
+        <span className="font-normal text-[var(--secondary)]"> · {experience.location}</span>
+      </p>
+      <p className="mt-5 font-body text-[0.875rem] leading-[1.6] text-[color-mix(in_srgb,var(--on-surface)_82%,var(--secondary))]">
+        {experience.description}
+      </p>
+      {experience.technologies.length > 0 && (
+        <ul className="mt-6 flex flex-wrap gap-2" aria-label="Technologies">
+          {experience.technologies.map((tech) => (
+            <li key={tech}>
+              <span className="ds-chip">{tech}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </article>
+  );
+}
+
 export default function WorkExperience() {
   const [ref, isVisible] = useScrollAnimation(0.15);
+  const railRef = useRef<HTMLDivElement>(null);
+  const [canPrev, setCanPrev] = useState(false);
+  const [canNext, setCanNext] = useState(true);
+
+  const featured = experiences.slice(0, 3);
+  const railExperiences = experiences.slice(3);
+
+  const updateArrows = useCallback(() => {
+    const el = railRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setCanPrev(scrollLeft > 4);
+    setCanNext(scrollLeft < scrollWidth - clientWidth - 4);
+  }, []);
+
+  useEffect(() => {
+    updateArrows();
+    const el = railRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', updateArrows, { passive: true });
+    window.addEventListener('resize', updateArrows);
+    return () => {
+      el.removeEventListener('scroll', updateArrows);
+      window.removeEventListener('resize', updateArrows);
+    };
+  }, [updateArrows]);
+
+  const scrollRail = useCallback((dir: 1 | -1) => {
+    const el = railRef.current;
+    if (!el) return;
+    const card = el.querySelector<HTMLElement>('[data-rail-card]');
+    const amount = card ? card.offsetWidth + 16 : el.clientWidth * 0.85;
+    el.scrollBy({ left: dir * amount });
+  }, []);
 
   return (
     <section id="work" className="px-4 py-[var(--spacing-section)] sm:px-6 lg:px-8">
@@ -121,10 +193,57 @@ export default function WorkExperience() {
             </p>
           </header>
           <div className="flex flex-col gap-11">
-            {experiences.map((experience) => (
+            {featured.map((experience) => (
               <ExperienceBlock key={`${experience.company}-${experience.date}`} experience={experience} />
             ))}
           </div>
+          {railExperiences.length > 0 && (
+            <div className="mt-16">
+              <div className="mb-8 flex flex-wrap items-end justify-between gap-6">
+                <div className="max-w-3xl">
+                  <p className="ds-section-meta">More experience</p>
+                  <p className="mt-3 max-w-[55ch] font-body text-[0.9375rem] leading-[1.6] text-[var(--secondary)]">
+                    Earlier roles and research positions.
+                    <span className="ml-1 text-[var(--on-surface)]">Scroll or use the arrows&nbsp;→</span>
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="ds-scroll-btn"
+                    onClick={() => scrollRail(-1)}
+                    disabled={!canPrev}
+                    aria-label="Previous experiences"
+                  >
+                    <ChevronLeft className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+                  </button>
+                  <button
+                    type="button"
+                    className="ds-scroll-btn"
+                    onClick={() => scrollRail(1)}
+                    disabled={!canNext}
+                    aria-label="Next experiences"
+                  >
+                    <ChevronRight className="h-4 w-4" strokeWidth={1.5} aria-hidden />
+                  </button>
+                </div>
+              </div>
+              <div
+                ref={railRef}
+                className="ds-hscroll"
+                role="region"
+                aria-label="More experience carousel — scroll horizontally"
+                tabIndex={0}
+              >
+                {railExperiences.map((experience) => (
+                  <ExperienceRailCard
+                    key={`${experience.company}-${experience.date}`}
+                    experience={experience}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </section>

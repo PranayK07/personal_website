@@ -1,156 +1,143 @@
 'use client';
 
-import { motion, useSpring, useTransform, useScroll } from 'framer-motion';
+import { motion, useScroll, useSpring, useTransform } from 'framer-motion';
+import { Mail } from 'lucide-react';
+import { SiGithub, SiX } from 'react-icons/si';
+import type { SVGProps } from 'react';
 
-// Hook: normalises window scroll to 0–1 over 65dvh
+const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
+
+// Authentic LinkedIn brand mark — Simple Icons no longer ships LinkedIn (brand
+// restrictions), so it's hand-rolled here as a monochrome currentColor glyph to
+// match the other brand marks.
+function SiLinkedin(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
+      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+    </svg>
+  );
+}
+
+// Real contact affordances — sourced from components/Contact.tsx
+const CONTACTS = [
+  {
+    label: 'Email',
+    href: 'mailto:pranay.kakkar@outlook.com',
+    icon: Mail,
+    external: false,
+  },
+  {
+    label: 'GitHub',
+    href: 'https://github.com/PranayK07',
+    icon: SiGithub,
+    external: true,
+  },
+  {
+    label: 'LinkedIn',
+    href: 'https://linkedin.com/in/pranay-kakkar',
+    icon: SiLinkedin,
+    external: true,
+  },
+  {
+    label: 'Twitter',
+    href: 'https://twitter.com/pranay_kakkar',
+    icon: SiX,
+    external: true,
+  },
+] as const;
+
+// Normalise window scroll to 0–1 over 65dvh — mirrors SiteRevealContext's signal,
+// purely for a graceful hand-off fade of the card (the reveal itself is driven by
+// SiteRevealContext reading window.scrollY directly).
 function useHeroScrollProgress() {
   const { scrollY } = useScroll();
-
   const raw = useTransform(scrollY, (y) => {
     if (typeof window === 'undefined') return 0;
     const limit = window.innerHeight * 0.65;
     return Math.min(1, Math.max(0, y / limit));
   });
-
-  return { raw };
+  return useSpring(raw, { stiffness: 80, damping: 22, mass: 0.6 });
 }
 
 export default function Hero() {
-  const { raw } = useHeroScrollProgress();
+  const progress = useHeroScrollProgress();
 
-  // Spring-smoothed scroll progress (silky deceleration)
-  const progress = useSpring(raw, { stiffness: 80, damping: 22, mass: 0.6 });
-
-  // ── Name: subtle scale-down as it moves from hero → layout ───────────
-  const nameScale = useTransform(progress, [0, 1], [1.08, 1]);
-
-  // ── Secondary elements opacity/y ─────────────────────────────────────
-  // Fade in as progress increases
-  const secondaryOpacity = useTransform(progress, [0.25, 0.85], [0, 1]);
-  const secondaryY       = useTransform(progress, [0.25, 0.85], [20, 0]);
-
-  const taglineOpacity = useTransform(progress, [0.3, 0.9], [0, 1]);
-  const taglineY       = useTransform(progress, [0.3, 0.9], [28, 0]);
-
-  const bioOpacity = useTransform(progress, [0.5, 1], [0, 1]);
-  const bioY       = useTransform(progress, [0.5, 1], [32, 0]);
-
-  const metaOpacity = useTransform(progress, [0, 0.35], [1, 0]);
-
-  // ── Role/subtitle opacity (shown only in hero mode) ───────────────────
-  const roleOpacity = useTransform(progress, [0, 0.3], [1, 0]);
+  // Gentle hand-off: the card recedes as the rest of the site reveals.
+  const cardOpacity = useTransform(progress, [0, 0.6], [1, 0]);
+  const cardY = useTransform(progress, [0, 0.6], [0, -28]);
+  const cardScale = useTransform(progress, [0, 0.6], [1, 0.98]);
 
   return (
     <section
       id="home"
       aria-label="Introduction"
       className="relative"
-      style={{
-        // Section occupies 165vh so the user has room to scroll through it
-        minHeight: '165dvh',
-        // Sticky so content stays in view while user scrolls through the section
-      }}
+      // Section occupies 165dvh so the user has room to scroll through it —
+      // this scrollable height is what lets SiteRevealContext reach its
+      // heroProgress thresholds (0.65 / 0.7). Do not shrink it.
+      style={{ minHeight: '165dvh' }}
     >
       <p className="sr-only">Scroll to reveal the rest of the site.</p>
 
-      {/* Sticky inner — stays in viewport while user scrolls through 165vh */}
+      {/* Sticky inner — keeps the card centred in the viewport while the user
+          scrolls through the 165dvh section. */}
       <div
-        className="sticky top-0 flex min-h-dvh items-stretch overflow-hidden"
+        className="sticky top-0 flex min-h-dvh items-center justify-center overflow-hidden px-4 sm:px-6"
         style={{ height: '100dvh' }}
       >
-        {/* ── Centre stage: the animated name block ─────────────────── */}
         <motion.div
-          className="relative flex w-full flex-col justify-start"
-          style={{
-            alignItems: 'flex-start',
-            paddingTop: 'clamp(6rem, 14vw, 10rem)',
-            paddingBottom: 'clamp(3rem, 6vw, 5rem)',
-            paddingLeft: 'clamp(1.25rem, 4vw, 5rem)',
-            paddingRight: 'clamp(1.25rem, 4vw, 5rem)',
-          }}
+          style={{ opacity: cardOpacity, y: cardY, scale: cardScale }}
+          className="flex w-full max-w-[30rem] flex-col items-center"
         >
-          {/* ── Pre-reveal label — fades OUT as we scroll ────────────── */}
-          <motion.p
-            className="font-mono-label mb-5 text-[0.6rem] uppercase tracking-[0.3em] text-[var(--secondary)]"
-            style={{ opacity: metaOpacity }}
+          <motion.article
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.65, ease: EASE_OUT_EXPO }}
+            className="ds-card w-full px-9 py-12 text-center sm:px-12 sm:py-14"
+            aria-label="Pranay Kakkar — contact card"
           >
-            PORTFOLIO_SYSTEM&nbsp;// UCONN_CS
-          </motion.p>
-
-          {/* ── The main grid: name | tagline ─────────────────────────── */}
-          <div className="w-full max-w-[var(--content-max)]">
-            <div className="grid gap-6 lg:grid-cols-[1fr_minmax(0,0.9fr)] lg:items-end lg:gap-16">
-              {/* Name */}
-              <motion.div style={{ scale: nameScale, originX: 0, originY: 0.5 }}>
-                <motion.h1
-                  className="font-display leading-[0.95] tracking-[-0.025em] text-[var(--on-surface)]"
-                  style={{
-                    fontSize: 'clamp(2.8rem, 8.5vw, 5.5rem)',
-                    fontWeight: 400,
-                  }}
-                >
-                  Pranay Kakkar
-                </motion.h1>
-
-                {/* Role — visible in hero, fades on scroll */}
-                <motion.p
-                  className="mt-4 font-body text-[clamp(1rem,2.2vw,1.125rem)] text-[var(--secondary)]"
-                  style={{ opacity: roleOpacity }}
-                >
-                  CS @ UConn
-                </motion.p>
-              </motion.div>
-
-              {/* Tagline — fades in on scroll */}
-              <motion.div
-                style={{
-                  opacity: taglineOpacity,
-                  y: taglineY,
-                }}
-              >
-                <p
-                  className="font-display font-medium leading-[1.15] tracking-[-0.02em] text-[var(--on-surface)] lg:text-right"
-                  style={{ fontSize: 'clamp(1.25rem, 3.2vw, 2.2rem)' }}
-                >
-                  ML, security research,
-                  <br className="hidden sm:block" /> and systems with intent.
-                </p>
-              </motion.div>
-            </div>
-
-            {/* ── Bio / body — fades in last ──────────────────────────── */}
-            <motion.div
-              className="mt-12 border-t border-[var(--ghost-border)] pt-10"
-              style={{
-                opacity: bioOpacity,
-                y: bioY,
-              }}
+            {/* Name — the focal point */}
+            <h1
+              className="font-display leading-[1.05] tracking-[-0.025em] text-[var(--on-surface)]"
+              style={{ fontSize: 'clamp(2.25rem, 8vw, 3.25rem)', fontWeight: 400 }}
             >
-              <div className="grid gap-8 lg:grid-cols-[1fr_auto]">
-                <p
-                  className="max-w-[58ch] font-body leading-[1.65] text-[color-mix(in_srgb,var(--on-surface)_85%,var(--secondary))]"
-                  style={{ fontSize: 'clamp(0.9375rem, 1.8vw, 1.0625rem)' }}
-                >
-                  Hi, I&apos;m Pranay Kakkar, a Computer Science major at UConn, passionate about
-                  applying data and machine learning to real-world problems. I&apos;ve researched
-                  cryptography, ML, and physics while also enjoying soccer, astronomy, and side
-                  projects that help me learn new skills.
-                </p>
+              Pranay Kakkar
+            </h1>
 
-                <motion.div
-                  className="flex flex-col gap-3 lg:items-end lg:text-right"
-                  style={{ opacity: secondaryOpacity, y: secondaryY }}
+            {/* Single, plain role line */}
+            <p className="mt-3 font-mono-label text-[0.7rem] uppercase tracking-[0.28em] text-[var(--secondary)]">
+              Computer Science · UConn
+            </p>
+
+            {/* Hairline divider, classic business-card style */}
+            <div className="mx-auto mt-7 h-px w-12 bg-[var(--outline)]" />
+
+            {/* Tagline */}
+            <p
+              className="mx-auto mt-7 max-w-[24rem] font-display leading-[1.4] tracking-[-0.01em] text-[var(--secondary)]"
+              style={{ fontSize: 'clamp(0.95rem, 2.4vw, 1.0625rem)' }}
+            >
+              ML, security research, and systems with intent.
+            </p>
+
+            {/* Contact details */}
+            <div className="mt-9 grid grid-cols-2 gap-2.5">
+              {CONTACTS.map(({ label, href, icon: Icon, external }) => (
+                <a
+                  key={label}
+                  href={href}
+                  aria-label={label}
+                  {...(external
+                    ? { target: '_blank', rel: 'noopener noreferrer' }
+                    : {})}
+                  className="ds-contact-link"
                 >
-                  <p className="font-mono-label text-[0.6rem] uppercase tracking-[0.22em] text-[var(--secondary)]">
-                    LOC // CONNECTICUT
-                  </p>
-                  <p className="font-mono-label text-[0.6rem] uppercase tracking-[0.22em] text-[var(--secondary)]">
-                    CS @ UCONN
-                  </p>
-                </motion.div>
-              </div>
-            </motion.div>
-          </div>
+                  <Icon className="h-4 w-4 shrink-0" strokeWidth={1.5} aria-hidden />
+                  <span>{label}</span>
+                </a>
+              ))}
+            </div>
+          </motion.article>
         </motion.div>
       </div>
     </section>
